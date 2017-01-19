@@ -1,0 +1,57 @@
+{
+  "id": "62471b8c-ecae-4878-aa72-cd3954359b76",
+  "timestamp": "2016-12-22T11:38:25.478Z",
+  "result": {
+    "source": "agent",
+    "resolvedQuery": "QuickReply",
+    "action": "",
+    "actionIncomplete": false,
+    "parameters": {},
+    "contexts": [],
+    "metadata": {
+      "intentId": "7ad68031-9fe4-4bd6-983c-be2c2f9cb769",
+      "webhookUsed": "false",
+      "webhookForSlotFillingUsed": "false",
+      "intentName": "QuickReplyTest"
+    },
+    "fulfillment": {
+      "speech": "",
+      "messages": [
+        {
+          "title": "Please Choose",
+          "replies": [
+            "Yes",
+            "No"
+          ],
+          "type": 2
+        },
+        {
+          "title": "Image Title",
+          "subtitle": "Subtitle",
+          "imageUrl": "https://goo.gl/images/J8eNF6",
+          "buttons": [
+            {
+              "text": "Hello",
+              "postback": "postback"
+            },
+            {
+              "text": "Hello again",
+              "postback": "https://google.com"
+            },
+            {
+              "text": "3rd time",
+              "postback": "https://goo.gl/images/J8eNF6"
+            }
+          ],
+          "type": 1
+        }
+      ]
+    },
+    "score": 1
+  },
+  "status": {
+    "code": 200,
+    "errorType": "success"
+  },
+  "sessionId": "7537e3ae-78cd-4796-b485-e3c3f08b99b1"
+}

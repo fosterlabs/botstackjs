@@ -1,0 +1,22 @@
+{
+  "name": "repost-bot",
+  "version": "0.0.0",
+  "description": "repost-bot",
+  "main": "server.js",
+  "author": {
+    "name": "joel",
+    "email": ""
+  },
+  "dependencies": {
+    "apiai": "^2.0.1",
+    "aws-sdk": "^2.5.3",
+    "dashbot": "^0.7.4",
+    "node-botmetrics": "0.0.1",
+    "node-emoji": "^1.3.1",
+    "oauth2-server": "^2.4.1",
+    "q": "^1.4.1",
+    "request": "^2.72.0",
+    "restify": "^4.1.1",
+    "uuid": "^3.0.0"
+    }
+}
