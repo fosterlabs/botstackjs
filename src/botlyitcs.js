@@ -1,4 +1,4 @@
-﻿var request = require("request");
+﻿const request = require("request");
 
 const BOTLYTICS_API_KEY = process.env.BOTLYTICS_API_KEY;
 
@@ -16,7 +16,7 @@ function logUserRequest(message, conversationId) {
                 conversation_identifier: conversationId
             }
         }
-    }, function (err, response, body) {
+    }, (err, response, body) => {
         if (err) {
             console.log("Sending User Req to Botylitcs");
         } else {
@@ -43,7 +43,7 @@ function logServerResponse(message, conversationId) {
                 conversation_identifier: conversationId
             }
         }
-    }, function (err, response, body) {
+    }, (err, response, body) => {
         if (err) {
             console.log("Sending Server Resp to Botylitcs");
         } else {
