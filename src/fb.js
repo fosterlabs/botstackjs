@@ -84,6 +84,71 @@ function quickReply(apiai_qr) {
     };
 }
 
+function setThreadSettings(data) {
+    let deferred = Q.defer();
+    let reqData = {
+        url: "https://graph.facebook.com/v2.6/me/thread_settings",
+        qs: {
+            access_token: process.env.FB_PAGE_ACCESS_TOKEN
+        },
+        method: 'POST',
+        json: data
+    };
+    request(reqData, (err, response, body) => {
+        if (err) {
+            console.log("===error while sending message to FB: ", err.message);
+            deferred.reject(err);
+        } else {
+            if (response.statusCode == 200) {
+                console.log("===sent settings to FB");
+                deferred.resolve(body);
+            } else {
+                console.log("===Error in FB response:", response);
+                deferred.reject(body);
+            }
+        }
+    });
+    return deferred.promise;
+}
+
+function greetingText(text) {
+    console.log("===sending greeting text");
+    let data = {
+        setting_type: "greeting",
+        greeting: {
+            text: text
+        }
+    }
+    return setThreadSettings(data);
+}
+
+function getStartedButton(payload) {
+    console.log("===sending started button");
+    let data = {
+        setting_type: "call_to_actions",
+        thread_state: "new_thread",
+        call_to_actions: [
+            { payload: payload }
+        ]
+    }
+    return setThreadSettings(data);
+}
+
+/*
+[{ type: "postback", title: "Yes", payload: "Yes" },
+ { type: "postback", title: "Help", payload: "Help" }]
+*/
+function persistentMenu(call_to_actions) {
+    console.log("===sending persistent menu settings");
+    let data = {
+        setting_type: "call_to_actions",
+        thread_state: "existing_thread",
+        call_to_actions: call_to_actions
+    };
+    return setThreadSettings(data);
+}
+
+
 function imageCard(thumbUrl, downloadUrl, instaUrl, authName) {
     return {
         "attachment": {
@@ -227,4 +292,7 @@ exports.genericMessage = genericMessage;
 exports.imageCard = imageCard;
 exports.imageAttachment = imageAttachment;
 exports.reply = reply;
-exports.youtubeVideoCard = youtubeVideoCard;  
+exports.youtubeVideoCard = youtubeVideoCard;
+exports.greetingText = greetingText;
+exports.getStartedButton = getStartedButton;
+exports.persistentMenu = persistentMenu;
