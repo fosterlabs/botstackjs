@@ -1,22 +1,22 @@
-﻿var AWS = require('./aws.js').AWS;
+﻿let AWS = require('./aws.js').AWS;
 const apiAiTable = process.env.DB_API_AI_LOG_TABLE || 'repost-apiai-logs';
 const logTable = process.env.DB_LOG_TABLE || 'repost-logs';
 
 function logInteraction(senderId, message, type) {
-    var docClient = new AWS.DynamoDB.DocumentClient();
-    var ts = new Date().getTime();
+    let docClient = new AWS.DynamoDB.DocumentClient();
+    let ts = new Date().getTime();
 
-    var params = {
+    let params = {
         TableName: logTable,
         Item: {
             utc_timestamp: ts,
             senderId : senderId,
-            message: message, 
+            message: message,
             type: type
         }
     };
 
-    docClient.put(params, function (err, data) {
+    docClient.put(params, (err, data) => {
         if (err) {
             console.log('Error logInteraction DynamoDB PUT', err);
         } else {
@@ -31,13 +31,13 @@ function logApiaiObject(arbitraryObj) {
     assignEmptyStrings(arbitraryObj);
 
 
-    var docClient = new AWS.DynamoDB.DocumentClient();
-    var params = {
+    let docClient = new AWS.DynamoDB.DocumentClient();
+    let params = {
         TableName: apiAiTable,
         Item: arbitraryObj
     }
 
-    docClient.put(params, function (err, data) {
+    docClient.put(params, (err, data) => {
         if (err) {
             console.log('Error logApiaiObject DynamoDB PUT', err);
         } else {
@@ -48,7 +48,7 @@ function logApiaiObject(arbitraryObj) {
 
 //recursive function to ensure that all strings have some value
 function assignEmptyStrings(object) {
-    for(var prop in object) {
+    for(let prop in object) {
         if(!object.hasOwnProperty(prop)) {               //check it is not a built-in type
             continue;
         }
@@ -58,7 +58,7 @@ function assignEmptyStrings(object) {
 
         } else if(object[prop] === '') {
             object[prop] = '**EMPTY**';
-        }        
+        }
     }
 }
 
