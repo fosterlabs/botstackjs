@@ -1,17 +1,17 @@
-﻿var dashbot = require('dashbot')(process.env.DASHBOT_API_KEY).facebook;
-var request = require("request");
-var Q = require("q");
+﻿const dashbot = require('dashbot')(process.env.DASHBOT_API_KEY).facebook;
+const request = require('request');
+const Q = require('q');
 
 function processMessagesFromApiAi(messages, senderID) {
-    for (var i = 0; i < messages.length; i++) {
-        var message = messages[i];
-        var replyMessage = null;
+    for (let i = 0; i < messages.length; i++) {
+        let message = messages[i];
+        let replyMessage = null;
 
         switch (message.type) {
             case 0:
                 replyMessage = textMessage(message.speech);
                 break;
-            case 1: 
+            case 1:
                 replyMessage = structuredMessage(message);
                 break;
             case 2:
@@ -19,13 +19,13 @@ function processMessagesFromApiAi(messages, senderID) {
                 break;
         }
 
-        reply(replyMessage, senderID);        
+        reply(replyMessage, senderID);
     }
 }
 
 function structuredMessage(message) {
-    var buttons = [];
-    for (var i = 0; i < message.buttons.length; i++) {
+    let buttons = [];
+    for (let i = 0; i < message.buttons.length; i++) {
         buttons.push({
             "type": "postback",
             "title": message.buttons[i].text,
@@ -68,9 +68,9 @@ function textMessage(message) {
 //  type: 2
 // }
 function quickReply(apiai_qr) {
-    var quick_replies = [];
+    let quick_replies = [];
 
-    for (var i = 0; i < apiai_qr.replies.length; i++) {
+    for (let i = 0; i < apiai_qr.replies.length; i++) {
         quick_replies.push({
             "content_type": "text",
             "title": apiai_qr.replies[i],
@@ -184,10 +184,10 @@ function genericMessage() {
 }
 //--------------------------------------------------------------------------------
 function reply(message, senderId) {
-    var deferred = Q.defer();
+    let deferred = Q.defer();
     console.log("===sending message to: ", senderId);
 
-    var reqData = {
+    let reqData = {
         url: 'https://graph.facebook.com/v2.6/me/messages',
         qs: {
             access_token: process.env.FB_PAGE_ACCESS_TOKEN
@@ -201,7 +201,7 @@ function reply(message, senderId) {
         }
     };
 
-    request(reqData, function (err, response, body) {
+    request(reqData, (err, response, body) => {
         if (err) {
             console.log("===error while sending message to FB: ", err.message);
             deferred.reject(err);
