@@ -1,9 +1,9 @@
 ﻿const BOTMETRICS_TOKEN = process.env.BOTMETRICS_TOKEN;
 
-var BotMetrics = require('node-botmetrics');
-var botmetrics = new BotMetrics(BOTMETRICS_TOKEN);
+const BotMetrics = require('node-botmetrics');
+let botmetrics = new BotMetrics(BOTMETRICS_TOKEN);
 
-function logUserRequest(message, conversationId) { 
+function logUserRequest(message, conversationId) {
 	log(message, conversationId, conversationId, 'incoming');
 };
 
