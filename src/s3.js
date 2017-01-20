@@ -1,10 +1,10 @@
-﻿var AWS = require('./aws.js').AWS;
-var request = require("request");
-var fs = require('fs');
+﻿let AWS = require('./aws.js').AWS;
+const request = require("request");
+const fs = require('fs');
 
 // var accessKeyId = process.env.AWS_ACCESS_KEY;
 // var secretAccessKey = process.env.AWS_SECRET_KEY;
-var bucketName = process.env.BUCKET_NAME;
+let bucketName = process.env.BUCKET_NAME;
 
 // AWS.config.update({
 //     accessKeyId: accessKeyId,
@@ -17,7 +17,7 @@ function putFileInS3ByUrl(url, key, callback) {
         url: url,
         method: 'GET',
         encoding: null,
-    }, function (err, response, body) {
+    }, (err, response, body) => {
         if (err) {
             console.log('Error in image get req', err);
         } else {
@@ -28,9 +28,9 @@ function putFileInS3ByUrl(url, key, callback) {
 }
 
 function putFileInS3(fileData, key, callback) {
-    var s3bucket = new AWS.S3({ params: { Bucket: bucketName } });
+    let s3bucket = new AWS.S3({ params: { Bucket: bucketName } });
 
-    var params = {
+    let params = {
         Key: key,
         Body: fileData,
         ContentType: 'application/octet-stream',
@@ -41,7 +41,7 @@ function putFileInS3(fileData, key, callback) {
 }
 
 function getUploadStream(key){
-    var upload = request({
+    let upload = request({
         method: 'PUT',
         url: 'https://' + bucketName + '.s3.amazonaws.com/' + key,
         aws: { bucket: bucketName, key: accessKeyId, secret: secretAccessKey }
