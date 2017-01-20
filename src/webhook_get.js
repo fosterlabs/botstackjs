@@ -1,7 +1,7 @@
 ﻿//The endpoint for facebook to verify the bot
 
-module.exports = function (req, res, next) {
-    var token = req.query.hub.verify_token;
+module.exports = (req, res, next) => {
+    let token = req.query.hub.verify_token;
     if (token === process.env.FB_VERIFY_TOKEN) {
         res.write(req.query.hub.challenge);
         res.end();
