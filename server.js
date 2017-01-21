@@ -1,5 +1,7 @@
 ﻿"use strict"
 
+require("dotenv").config()
+
 //imports
 const restify = require("restify")
 const request = require("request");

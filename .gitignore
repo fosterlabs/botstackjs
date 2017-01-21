@@ -242,6 +242,7 @@ ModelManifest.xml
 .paket/paket.exe
 
 # FAKE - F# Make
-.fake/
+.fake/.env
+.env
 
 .vscode/
