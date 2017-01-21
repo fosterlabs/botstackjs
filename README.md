@@ -10,7 +10,7 @@ That's why we've open sourced our Facebook Messenger node.js code base so you ca
 * BotStackjs - clean modular resumable libraries 
 * Node.js (Highly scalable, ultra fast code)
 * API.AI (Google owned NLP. Super easy to configure and train)
-* DashBot and BotMetrics (Analytics to make better decisions)
+* DashBot and BotMetrics (Analytics and Broadcast features)
 * Amazon Dynamodb (Logging)
 
 ## Features
