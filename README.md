@@ -1,6 +1,6 @@
 ## BotStackjs
 
-# IMPORTANT: We are currently re-factoring and moving code from our active bots and trying work out the best method to package up the 3rd party services (i.e. RDIS, Sentry, RDIS, Mongo DB) with out blowing out costs. Some features and functionality may not be available. Message if there is something particular you are after.
+### IMPORTANT: We are currently re-factoring and moving code from our active bots and trying work out the best method to package up the 3rd party services (i.e. RDIS, Sentry, RDIS, Mongo DB) with out blowing out costs. Some features and functionality may not be available. Message if there is something particular you are after.
 
 ## Why?
 We believe the beginning of a successful bot has little to do with engineering and everything to do with the skill of the product owner in acquiring users and keeping them faster than their competition.
