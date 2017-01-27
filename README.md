@@ -11,6 +11,7 @@ That's why we've open sourced our Facebook Messenger node.js code base so you ca
 * Configurable 'Get Started Greeting'
 * Configurable Messenger Action Menu
 * Configurable User Onboarding Messages
+* M.Me referals - Track different links placed in different channels to see which is most effective
 * API.AI Content Support (Image, Quick Replys, Card, Custom Payload)
 * Integrated analytics for DashBot & BotMetrics
 
