@@ -31,7 +31,7 @@ That's why we've open sourced our Facebook Messenger node.js code base so you ca
 * Track Stack Traces with Sentry
 
 ## Roadmap
-* What would you like to add or improve?
+* Rabbit MQ Support
 
 ## Installation
 * git clone https://github.com/cama/botstackjs.git
