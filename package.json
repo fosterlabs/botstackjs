@@ -20,7 +20,8 @@
     "request": "^2.79.0",
     "request-promise": "^4.1.1",
     "restify": "^4.1.1",
-    "uuid": "^3.0.0"
+    "uuid": "^3.0.0",
+    "winston": "^2.3.1"
   },
   "engines": {
     "node": ">=6.9.1"
