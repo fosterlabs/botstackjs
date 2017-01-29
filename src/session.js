@@ -1,53 +1,98 @@
 //We need to persist a map of session ids against users
 //when we rx a message from fb, store the senderId alongside a UUID
 //store the date and time when a session is added or updated so they can be pruned
+const Promise = require('bluebird');
+const co = Promise.coroutine;
+const redis = require('redis');
+
+Promise.promisifyAll(redis.RedisClient.prototype);
+Promise.promisifyAll(redis.Multi.prototype);
+
+const client = redis.createClient();
+
 const uuid = require('uuid');
+const maxSessionAge_ms = 1000 * 60 * 180;
 
-let sessionIdMap = new Map();
-let maxSessionAge_ms = 1000 * 60 * 180;
-
-//if the senderId is not in the store, add it with a new UUID
-//if it is present, update the date
-function set(senderId) {
-    if(sessionIdMap.has(senderId)) {
-        let mapObj = sessionIdMap.get(senderId);
-        mapObj.lastUsed = new Date();
-    } else {
-        let mapObj = {
+/**
+ * Add new session
+ * @param {string} senderId - sender ID
+ * @return {bool} true if new session created, false if session exists
+*/
+let set = co(function* (senderId) {
+    let sessionExists = yield client.hexistsAsync("sessions", senderId);
+    if (sessionExists == 0) {
+        let data = {
             sessionId: uuid.v1(),
             lastUsed: new Date()
         };
-    }
-
-    sessionIdMap.set(senderId, mapObj);
-}
-
-//grab the session ID for a user from the store
-function get(senderId) {
-    let item = sessionIdMap.get(senderId);
-    return item ? item.sessionId : uuid.v1();     //or a new one, but unlikely
-}
-
-function printSessions() {
-    sessionIdMap.forEach((item, key) => {
-        console.log('SenderID:' + key + ' SessionId:' + item.sessionId + ' Last Used:' + item.lastUsed);
-    });
-}
-
-function clearOldSessions() {
-    let now = new Date();
-    let sessionSize = sessionIdMap.size;
-    sessionIdMap.forEach((item, key, map) => {
-        if(Math.abs(now - item.lastUsed) > maxSessionAge_ms) {
-            map.delete(key);
+        let res = yield client.hsetAsync("sessions", senderId, JSON.stringify(data));
+        if (res == 0) {
+            return false;
+        } else {
+            return true;
         }
-    });
-    console.log('Session Size ' + sessionIdMap.size + ' items. Removed ' + (sessionSize - sessionIdMap.size) + ' items');
-}
+    } else {
+        let data = yield client.hgetAsync("sessions", senderId);
+        data = JSON.parse(data);
+        data.lastUsed = new Date();
+        let res = yield client.hsetAsync("sessions", senderId, JSON.stringify(data));
+        if (res == 0) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+});
+
+/**
+ * Get existing session data
+ * @param {string} senderId - sender ID
+ * @param {bool} autoCreate - if true session will be autocreated if not found (default false)
+ * @return {object} session data or null if not found
+*/
+let get = co(function* (senderId, autoCreate) {
+    autoCreate = typeof(autoCreate) !== 'undefined' ? autoCreate: false;
+    let sessionExists = yield client.hexistsAsync("sessions", senderId);
+    if (sessionExists == 1) {
+        let data = yield client.hgetAsync("sessions", senderId);
+        return JSON.parse(data);
+    } else {
+        if (autoCreate) {
+            let res = yield set(senderId);
+            return res;
+        } else {
+            return null;
+        }
+    }
+})
+
+let printSessions = co(function* () {
+    let data = yield client.hgetallAsync("sessions");
+    for (key in data) {
+        let itemVal = JSON.parse(data[key]);
+        console.log('SenderID:' + key + ' SessionId:' + itemVal.sessionId + ' Last Used:' + itemVal.lastUsed);
+    };
+});
+
+let clearOldSessions = co(function* () {
+    let not = new Date();
+    let sessionsSize = yield client.hlenAsync("sessions");
+    let sessions = yield client.hgetallAsync("sessions");
+    for (senderId in sessions) {
+        let data = JSON.parse(sessions[senderId]);
+        if (Math.abs(now - data.lastUsed) > maxSessionAge_ms) {
+            client.hdelAsync("sessions", senderId);
+        }
+    }
+    let sessionsSizeNow = yield client.hlenAsync("sessions");
+    console.log('Session Size ' + sessionsSizeNow + ' items. Removed ' + (sessionsSize - sessionsSizeNow) + ' items');
+});
 
 //run frequently to remove sessions
+// FIXME: move to job queue (this will not work on multi instance mode)
 setInterval(clearOldSessions, maxSessionAge_ms);
 
 exports.set = set;
 exports.get = get;
 exports.printSessions = printSessions;
+exports.clearOldSessions = clearOldSessions;
