@@ -1,6 +1,9 @@
-﻿const apiai = require('apiai');
+﻿const Promise = require('bluebird');
+const co = Promise.coroutine;
+const apiai = require('apiai');
 const Q = require("q");
 const sessionStore = require('./session.js');
+const log = require('./log.js');
 
 const APIAI_ACCESS_TOKEN = process.env.APIAI_ACCESS_TOKEN;
 const APIAI_LANG = "en";
@@ -16,6 +19,10 @@ function isDefined(obj) {
     }
 
     return obj != null;
+}
+
+function processEvent(eventName, senderId) {
+
 }
 
 function processTextMessage(message, senderId) {
