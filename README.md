@@ -21,7 +21,7 @@ That's why we've open sourced our Facebook Messenger node.js code base so you ca
 * API.AI - Best in class Natural Language Processing
 * DashBot & BotMetrics - Insightful analytics and powerful broadcast
 * Mongo DB - Open-source database to user settings
-* RDIS - In-memory cache storage for thing like user sessions
+* Redis - In-memory cache storage for thing like user sessions
 
 ## Code
 * Subscriber service with Cron
