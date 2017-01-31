@@ -22,7 +22,7 @@ class BotStack {
             res.send('Nothing to see here...');
         });
 
-        this.server.get('/webhook/', (res, res, next) => {
+        this.server.get('/webhook/', (req, res, next) => {
             let token = req.query.hub.verify_token;
             if (token === process.env.FB_VERIFY_TOKEN) {
                 res.write(req.query.hub.challenge);
@@ -189,7 +189,7 @@ class BotStack {
     startServer() {
         const port = process.env.PORT || 1337;
         this.server.listen(port, () => {
-            console.log("listening on port:%s %s %s", port, server.name, server.url);
+            console.log("listening on port:%s %s %s", port, this.server.name, this.server.url);
         });
     }
 }

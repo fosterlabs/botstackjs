@@ -1,8 +1,13 @@
-﻿let fb = require("./fb");
-let apiai = require("./api-ai.js");
-let botmetrics = require('./bot-metrics.js');
-let dashbot = require('dashbot')(process.env.DASHBOT_API_KEY).facebook;
-let sessionStore = require('./session.js');
+﻿const fb = require("./fb");
+const apiai = require("./api-ai.js");
+const botmetrics = require('./bot-metrics.js');
+const dashbot = require('dashbot')(process.env.DASHBOT_API_KEY).facebook;
+const sessionStore = require('./session.js');
+const log = require('./log.js');
+
+function processWelcomeMessage(messageText, senderID) {
+    
+}
 
 module.exports = (req, res, next) => {
     console.log(" ");

@@ -27,8 +27,15 @@ server.post("/webhook/", webhookPost);
 //api.ai generic storage hook
 server.post("/apiaidb/", apiai_webhook);
 
-const port = process.env.PORT || 1337;
-server.listen(port, () => {
-    console.log("listening on port:%s %s %s", port, server.name, server.url);
-});
+function startServer() {
+    const port = process.env.PORT || 1337;
+    server.listen(port, () => {
+        console.log("listening on port:%s %s %s", port, server.name, server.url);
+    });
+}
+
+module.exports = {
+    startServer: startServer
+}
+
 
