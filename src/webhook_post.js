@@ -34,7 +34,7 @@ module.exports = (req, res, next) => {
                 // check for an instagram url
 
                 //pass to api.ai
-                console.log('Sending to A   PI.ai:' + text + ' Sender:' + senderID);
+                console.log('Sending to API.ai:' + text + ' Sender:' + senderID);
 
                 apiai.processTextMessage(text, senderID).then((apiaiResp) => {
                     fb.processMessagesFromApiAi(apiaiResp, senderID);

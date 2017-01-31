@@ -55,16 +55,25 @@ let get = co(function* (senderId, autoCreate) {
     let sessionExists = yield client.hexistsAsync("sessions", senderId);
     if (sessionExists == 1) {
         let data = yield client.hgetAsync("sessions", senderId);
-        return JSON.parse(data);
+        return JSON.parse(data).sessionId;
     } else {
         if (autoCreate) {
             let res = yield set(senderId);
-            return res;
+            return res.sessionId;
         } else {
             return null;
         }
     }
-})
+});
+
+let checkExists = co(function* (senderId) {
+    let item = yield get(senderId);
+    if (item) {
+        return true;
+    } else {
+        return false;
+    }
+});
 
 let printSessions = co(function* () {
     let data = yield client.hgetallAsync("sessions");
@@ -96,3 +105,4 @@ exports.set = set;
 exports.get = get;
 exports.printSessions = printSessions;
 exports.clearOldSessions = clearOldSessions;
+exports.checkExists = checkExists;

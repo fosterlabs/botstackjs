@@ -33,7 +33,7 @@ class BotStack {
             return next();
         });
 
-        this.server.post('/webhook/', this._webhookPost);
+        this.server.post('/webhook/', this._webhookPost(this));
 
         this.server.post('/apiaidb/', (req, res, next) => {
             res.json({
@@ -55,66 +55,6 @@ class BotStack {
             }
             return next();
         });
-    };
-
-    _webhookPost(req, res, next) {
-        res.end();
-        let entries = req.body.entry;
-        entries.forEach(entry => {
-            let messages = entry.messaging;
-            messages.forEach(message => {
-                let senderID = message.sender.id;
-                let isNewSession = sessionStore.checkExists(senderID);
-                const isPostbackMessage = message.postback ? true : false;
-                let isTextMessage = false;
-                if ('message' in message && 'text' in message.message) {
-                    isTextMessage = true;
-                }
-                sessionStore.set(senderID);
-                if (isTextMessage) {
-                    if (message.message.text == "Get Started") {
-                        this.welcomeMessage(message.message.text, senderID);
-                    } else {
-                        this.textMessage(message, senderID);
-                    }
-                } else if (isPostbackMessage) {
-                    if (message.postback.payload == "Get Started") {
-                        this.welcomeMessage(message.postback.payload, senderID);
-                    } else {
-                        this.postbackMessage(message, senderID);
-                    }
-                } else {
-                    this.fallback(message, senderID);
-                }
-            });
-        });
-    }
-
-    welcomeMessage(messageText, senderID) {
-        botmetrics.logUserRequest(messageText, senderID);
-        log.debug("Process welcome message", {
-            module: "botstack:welcomeMessage",
-            senderId: senderID
-        });
-        co(function* (){
-            try {
-                let apiaiResp = yield apiai.processEvent("FACEBOOK_WELCOME", senderID);
-                log.debug("Facebook welcome result", {
-                    module: "botstack:welcomeMessage",
-                    senderId: senderID
-                });
-                fb.processMessagesFromApiAi(apiaiResp, senderID);
-                botmetrics.logServerResponse(apiaiResp, senderID);
-            } catch (err) {
-                log.error(err, {
-                    module: "botstack:welcomeMessage",
-                    senderId: senderID,
-                    reason: "Error in API.AI response"
-                });
-                fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
-                botmetrics.logServerResponse(err, senderID);
-            }
-        })();
     };
 
     textMessage(message, senderID) {
@@ -142,6 +82,72 @@ class BotStack {
                     senderId: senderID,
                     reason: "Error on API.AI request"
                 });
+                botmetrics.logServerResponse(err, senderID);
+            }
+        })();
+    };
+
+    _webhookPost(context) {
+        let self = context;
+        return function(req, res, next) {
+            co(function* (){
+                res.end();
+                let entries = req.body.entry;
+                //debugger;
+                for (let entry of entries) {
+                    let messages = entry.messaging;
+                    for (let message of messages) {
+                        let senderID = message.sender.id;
+                        let isNewSession = yield sessionStore.checkExists(senderID);
+                        const isPostbackMessage = message.postback ? true : false;
+                        let isTextMessage = false;
+                        if ('message' in message && 'text' in message.message) {
+                            isTextMessage = true;
+                        }
+                        yield sessionStore.set(senderID);
+                        if (isTextMessage) {
+                            if (message.message.text == "Get Started") {
+                                self.welcomeMessage(message.message.text, senderID);
+                            } else {
+                                self.textMessage(message, senderID);
+                            }
+                        } else if (isPostbackMessage) {
+                            if (message.postback.payload == "Get Started") {
+                                self.welcomeMessage(message.postback.payload, senderID);
+                            } else {
+                                self.postbackMessage(message, senderID);
+                            }
+                        } else {
+                            self.fallback(message, senderID);
+                        }
+                    }
+                }
+            })();
+        }
+    }
+
+    welcomeMessage(messageText, senderID) {
+        botmetrics.logUserRequest(messageText, senderID);
+        log.debug("Process welcome message", {
+            module: "botstack:welcomeMessage",
+            senderId: senderID
+        });
+        co(function* (){
+            try {
+                let apiaiResp = yield apiai.processEvent("FACEBOOK_WELCOME", senderID);
+                log.debug("Facebook welcome result", {
+                    module: "botstack:welcomeMessage",
+                    senderId: senderID
+                });
+                fb.processMessagesFromApiAi(apiaiResp, senderID);
+                botmetrics.logServerResponse(apiaiResp, senderID);
+            } catch (err) {
+                log.error(err, {
+                    module: "botstack:welcomeMessage",
+                    senderId: senderID,
+                    reason: "Error in API.AI response"
+                });
+                fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
                 botmetrics.logServerResponse(err, senderID);
             }
         })();
@@ -183,12 +189,13 @@ class BotStack {
             module: "botstack:fallback",
             senderId: senderID
         });
-        fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
+        //fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
     };
 
     startServer() {
         const port = process.env.PORT || 1337;
         this.server.listen(port, () => {
+            console.log(`Bot '${this.botName}' is ready`);
             console.log("listening on port:%s %s %s", port, this.server.name, this.server.url);
         });
     }

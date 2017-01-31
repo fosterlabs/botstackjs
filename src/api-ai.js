@@ -25,40 +25,57 @@ function processEvent(eventName, senderId) {
 
 }
 
-function processTextMessage(message, senderId) {
-    console.log("api-ai: Processing " + message);
-
-    let deferred = Q.defer();
-    let sessionId = sessionStore.get(senderId);
-    console.log("SessionId:" + sessionId);
+let processTextMessage = co(function* (message, senderId) {
+    let sessionId = yield sessionStore.get(senderId);
+    log.debug("Process text message", {
+        module: "botstack:api-ai",
+        senderId: senderId,
+        message: message,
+        sessionId: sessionId
+    });
 
     let apiaiRequest = apiAiService.textRequest(message, {
         sessionId: sessionId
     });
 
-    apiaiRequest.on('response', (response) => {
-        console.log("api-ai Responded");
-        if (isDefined(response.result)) {
-            let responseText = response.result.fulfillment.speech;
-            let responseData = response.result.fulfillment.data;
-            let messages = response.result.fulfillment.messages;
-            let action = response.result.action;
-
-            if (isDefined(responseData) && isDefined(responseData.facebook)) {
-                console.log('Response as formatted message');
-            } else if (isDefined(messages)) {
-                deferred.resolve(messages);
+    let apiaiResponse = new Promise((resolve, reject) => {
+        apiaiRequest.on('response', response => {
+            log.debug("API.AI responded", {
+                module: "botstack:api-ai",
+                senderId: senderId,
+                message: message,
+                response: response
+            });
+            if (isDefined(response.result)) {
+                let responseText = response.result.fulfillment.speech;
+                let responseData = response.result.fulfillment.data;
+                let messages = response.result.fulfillment.messages;
+                let action = response.result.action;
+                if (isDefined(responseData) && isDefined(responseData.facebook)) {
+                    log.debug("Response as formatted message", {
+                        module: "botstack:api-ai",
+                        senderId: senderId
+                    });
+                    resolve(null);
+                } else if (isDefined(messages)) {
+                    resolve(messages);
+                }
             }
-        }
+        });
+
+        apiaiRequest.on('error', error => {
+            log.error(error, {
+                module: "botstack:api-ai",
+                senderId: senderId
+            });
+            reject(error);
+        });
+
+        apiaiRequest.end();
     });
 
-    apiaiRequest.on('error', (error) => {
-        console.error(error);
-        deferred.reject(error);
-    });
-
-    apiaiRequest.end();
-    return deferred.promise;
-};
+    let result = yield apiaiResponse;
+    return apiaiResponse;
+});
 
 exports.processTextMessage = processTextMessage;
