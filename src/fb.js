@@ -1,38 +1,50 @@
 ﻿const dashbot = require('dashbot')(process.env.DASHBOT_API_KEY).facebook;
 const request = require('request');
+const rp = require('request-promise');
+const Promise = require('bluebird');
+const co = Promise.coroutine;
+const log = require("./log.js");
 const Q = require('q');
 
-function processMessagesFromApiAi(messages, senderID) {
-    for (let i = 0; i < messages.length; i++) {
-        let message = messages[i];
+let processMessagesFromApiAi = co(function* (messages, senderID){
+    for (let message of messages) {
         let replyMessage = null;
-
+        log.debug("Process message from API.AI", {
+            module: "botstack:fb",
+            message: message,
+            messageType: message.type
+        });
         switch (message.type) {
-            case 0:
+            case 0: // text response
                 replyMessage = textMessage(message.speech);
                 break;
-            case 1:
+            case 1: // image response
                 replyMessage = structuredMessage(message);
                 break;
-            case 2:
+            case 2: // card response
                 replyMessage = quickReply(message);
                 break;
+            case 3: // quick reply
+                replyMessage = imageReply(message);
+                break;
+            case 4: // custom payload
+                replyMessage = customMessageReply(message);
+                break;
         }
-
-        reply(replyMessage, senderID);
+        yield reply(replyMessage, senderID);
     }
-}
+});
+
 
 function structuredMessage(message) {
     let buttons = [];
-    for (let i = 0; i < message.buttons.length; i++) {
+    for (let button of message.buttons) {
         buttons.push({
             "type": "postback",
-            "title": message.buttons[i].text,
-            "payload": message.buttons[i].postback
+            "title": button.text,
+            "payload": button.postback
         });
     }
-
 
     return {
         "attachment": {
@@ -50,7 +62,7 @@ function structuredMessage(message) {
             }
         }
     }
-}
+};
 
 //--------------------------------------------------------------------------------
 function textMessage(message) {
@@ -70,11 +82,11 @@ function textMessage(message) {
 function quickReply(apiai_qr) {
     let quick_replies = [];
 
-    for (let i = 0; i < apiai_qr.replies.length; i++) {
+    for (let repl of apiai_qr.replies) {
         quick_replies.push({
             "content_type": "text",
-            "title": apiai_qr.replies[i],
-            "payload": apiai_qr.replies[i]
+            "title": repl,
+            "payload": repl
         });
     }
 
@@ -84,35 +96,109 @@ function quickReply(apiai_qr) {
     };
 }
 
-function setThreadSettings(data) {
-    let deferred = Q.defer();
+function imageReply(message) {
+    return {
+        attachment: {
+            type: "image",
+            payload: {
+                url: message.imageUrl || message.url
+            }
+        }
+    }
+};
+
+function videoReply(message) {
+    return {
+        attachment: {
+            type: "video",
+            payload: {
+                url: message.url
+            }
+        }
+    }
+}
+
+function audioReply(message) {
+    return {
+        attachment: {
+            type: "audio",
+            payload: {
+                url: message.url
+            }
+        }
+    }
+}
+
+function fileReply(message) {
+    return {
+        attachment: {
+            type: "file",
+            payload: {
+                url: message.url
+            }
+        }
+    }
+}
+
+function customMessageReply(message) {
+    if ('payload' in message) {
+        if ('facebook' in message.payload) {
+            if ('attachment' in message.payload.facebook) {
+                switch (message.payload.facebook.attachment.type) {
+                    case "video":
+                        return videoReply(message.payload.facebook.attachment.payload);
+                        break;
+                    case "audio":
+                        return audioReply(message.payload.facebook.attachment.payload);
+                        break;
+                    case "file":
+                        return fileReply(message.payload.facebook.attachment.payload);
+                        break;
+                    case "image":
+                        return imageReply(message.payload.facebook.attachment.payload);
+                        break;
+                }
+            }
+        }
+    }
+}
+
+let setThreadSettings = co(function* (data, method) {
+    method = typeof(method) !== 'undefined' ? method: "POST";
     let reqData = {
         url: "https://graph.facebook.com/v2.6/me/thread_settings",
         qs: {
             access_token: process.env.FB_PAGE_ACCESS_TOKEN
         },
-        method: 'POST',
+        resolveWithFullResponse: true,
+        method: method,
         json: data
     };
-    request(reqData, (err, response, body) => {
-        if (err) {
-            console.log("===error while sending message to FB: ", err.message);
-            deferred.reject(err);
+    try {
+        let response = yield rp(reqData);
+        if (response.statusCode == 200) {
+            log.debug("Sent settings to Facebook", {
+                module: "botstack:fb"
+            });
+            return response.body;
         } else {
-            if (response.statusCode == 200) {
-                console.log("===sent settings to FB");
-                deferred.resolve(body);
-            } else {
-                console.log("===Error in FB response:", response);
-                deferred.reject(body);
-            }
+            log.error("Error in Facebook response", {
+                module: "botstack:fb", response: response.body
+            });
+            throw new Error("Error in Facebook response: " + response.body);
         }
-    });
-    return deferred.promise;
-}
+    } catch (e) {
+        log.error(e, {
+            module: "botstack:fb"
+        });
+        throw e;
+    }
+});
 
 function greetingText(text) {
-    console.log("===sending greeting text");
+    log.debug("Sending greeting text", {
+        module: "botstack:fb"
+    });
     let data = {
         setting_type: "greeting",
         greeting: {
@@ -123,7 +209,10 @@ function greetingText(text) {
 }
 
 function getStartedButton(payload) {
-    console.log("===sending started button");
+    payload = typeof(payload) !== 'undefined' ? payload: "Get Started";
+    log.debug("Sending started button", {
+        module: "botstack:fb"
+    });
     let data = {
         setting_type: "call_to_actions",
         thread_state: "new_thread",
@@ -139,13 +228,26 @@ function getStartedButton(payload) {
  { type: "postback", title: "Help", payload: "Help" }]
 */
 function persistentMenu(call_to_actions) {
-    console.log("===sending persistent menu settings");
+    log.debug("Sending persistent menu settings", {
+        module: "botstack:fb"
+    });
     let data = {
         setting_type: "call_to_actions",
         thread_state: "existing_thread",
         call_to_actions: call_to_actions
     };
     return setThreadSettings(data);
+}
+
+function deletePersistentMenu() {
+    log.debug("Delete persistent menu settings", {
+        module: "botstack:fb"
+    });
+    let data = {
+        setting_type: "call_to_actions",
+        thread_state: "existing_thread"
+    }
+    return setThreadSettings(data, "DELETE");
 }
 
 
@@ -250,7 +352,10 @@ function genericMessage() {
 //--------------------------------------------------------------------------------
 function reply(message, senderId) {
     let deferred = Q.defer();
-    console.log("===sending message to: ", senderId);
+    log.debug("Sending message", {
+        module: "botstack:fb",
+        senderId: senderId
+    });
 
     let reqData = {
         url: 'https://graph.facebook.com/v2.6/me/messages',
@@ -268,16 +373,24 @@ function reply(message, senderId) {
 
     request(reqData, (err, response, body) => {
         if (err) {
-            console.log("===error while sending message to FB: ", err.message);
+            log.error(err, {
+                module: "botstack:fb",
+                reason: "Error while sending message to FB"
+            });
             deferred.reject(err);
         } else {
             dashbot.logOutgoing(reqData, response.body);
 
             if (response.statusCode == 200) {
-                console.log("===sent message to FB");
+                log.debug("Send message to Facebook", {
+                    module: "botstack:fb"
+                });
                 deferred.resolve(body);
             } else {
-                console.log("===Error in FB response:", response);
+                log.error("Error in Facebook response", {
+                    module: "botstack:fb",
+                    response: body
+                });
                 deferred.reject(body);
             }
         }
