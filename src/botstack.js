@@ -93,7 +93,6 @@ class BotStack {
             co(function* (){
                 res.end();
                 let entries = req.body.entry;
-                //debugger;
                 for (let entry of entries) {
                     let messages = entry.messaging;
                     for (let message of messages) {
