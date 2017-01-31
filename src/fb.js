@@ -6,7 +6,7 @@ const co = Promise.coroutine;
 const log = require("./log.js");
 const Q = require('q');
 
-let processMessagesFromApiAi = co(function* (messages, senderID){
+let processMessagesFromApiAi = co(function* (messages, senderID) {
     for (let message of messages) {
         let replyMessage = null;
         log.debug("Process message from API.AI", {
@@ -31,7 +31,7 @@ let processMessagesFromApiAi = co(function* (messages, senderID){
                 replyMessage = customMessageReply(message);
                 break;
         }
-        yield reply(replyMessage, senderID);
+        reply(replyMessage, senderID);
     }
 });
 
@@ -46,19 +46,22 @@ function structuredMessage(message) {
         });
     }
 
+    let element = {
+        "title": message.title,
+        "subtitle": message.subtitle,
+        "image_url": message.imageUrl
+    }
+
+    if (buttons.length > 0) {
+        element["buttons"] = buttons
+    }
+
     return {
         "attachment": {
             "type": "template",
             "payload": {
                 "template_type": "generic",
-                "elements": [
-                    {
-                        "title": message.title,
-                        "subtitle": message.subtitle,
-                        "image_url": message.imageUrl,
-                        "buttons": buttons
-                    }
-                ]
+                "elements": [element]
             }
         }
     }
@@ -66,8 +69,12 @@ function structuredMessage(message) {
 
 //--------------------------------------------------------------------------------
 function textMessage(message) {
-    return {
-        "text": message
+    if (message == "") {
+        return null;
+    } else {
+        return {
+            "text": message
+        }
     }
 }
 
@@ -351,10 +358,14 @@ function genericMessage() {
 }
 //--------------------------------------------------------------------------------
 function reply(message, senderId) {
+    if (message == null) {
+        return;
+    }
     let deferred = Q.defer();
     log.debug("Sending message", {
         module: "botstack:fb",
-        senderId: senderId
+        senderId: senderId,
+        message: message
     });
 
     let reqData = {
