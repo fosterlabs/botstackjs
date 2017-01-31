@@ -359,6 +359,11 @@ function genericMessage() {
 //--------------------------------------------------------------------------------
 function reply(message, senderId) {
     if (message == null) {
+        log.debug("This message ignored to send", {
+            module: "botstack:fb",
+            senderId: senderId,
+            message: message
+        });
         return;
     }
     let deferred = Q.defer();
