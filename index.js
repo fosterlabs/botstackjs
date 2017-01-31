@@ -1,4 +1,4 @@
 "use strict";
 
 require("dotenv").config();
-module.exports = require('./src/server.js');
+module.exports = require('./src/botstack.js');
