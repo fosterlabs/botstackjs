@@ -1,15 +1,13 @@
 ﻿"use strict"
 
-require("dotenv").config()
-
 //imports
-const restify = require("restify")
+const restify = require("restify");
 const request = require("request");
 
 //user modules
-const webhookGet = require('./src/webhook_get.js');
-const webhookPost = require('./src/webhook_post.js');
-const apiai_webhook = require('./src/api-ai-webhook.js');
+const webhookGet = require('./webhook_get.js');
+const webhookPost = require('./webhook_post.js');
+const apiai_webhook = require('./api-ai-webhook.js');
 
 const server = restify.createServer();
 server.use(restify.queryParser());
