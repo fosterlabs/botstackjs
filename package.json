@@ -8,7 +8,7 @@
     "email": ""
   },
   "dependencies": {
-    "apiai": "^2.0.1",
+    "apiai": "^3.0.3",
     "aws-sdk": "^2.5.3",
     "bluebird": "^3.4.7",
     "dashbot": "^0.7.4",
