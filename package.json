@@ -1,8 +1,8 @@
 {
-  "name": "repost-bot",
-  "version": "0.0.0",
-  "description": "repost-bot",
-  "main": "server.js",
+  "name": "botstack",
+  "version": "0.0.1",
+  "description": "Bot Stack",
+  "main": "./index.js",
   "author": {
     "name": "joel",
     "email": ""
