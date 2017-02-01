@@ -115,7 +115,11 @@ let processTextMessage = co(function* (message, senderId) {
                     });
                     resolve(null);
                 } else if (isDefined(messages)) {
-                    resolve(messages);
+                    let returnData = {
+                        messages: messages,
+                        response: response
+                    };
+                    resolve(returnData);
                 }
             }
         });

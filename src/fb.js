@@ -6,8 +6,8 @@ const co = Promise.coroutine;
 const log = require("./log.js");
 const Q = require('q');
 
-let processMessagesFromApiAi = co(function* (messages, senderID) {
-    for (let message of messages) {
+let processMessagesFromApiAi = co(function* (apiaiResponse, senderID) {
+    for (let message of apiaiResponse.messages) {
         let replyMessage = null;
         log.debug("Process message from API.AI", {
             module: "botstack:fb",
