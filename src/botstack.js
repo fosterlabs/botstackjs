@@ -186,7 +186,8 @@ class BotStack {
     fallback(message, senderID) {
         log.debug("Unknown message", {
             module: "botstack:fallback",
-            senderId: senderID
+            senderId: senderID,
+            message: message
         });
         //fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
     };
