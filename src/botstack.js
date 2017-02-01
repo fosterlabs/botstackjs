@@ -18,6 +18,10 @@ class BotStack {
         this.server.use(restify.queryParser());
         this.server.use(restify.bodyParser());
 
+        // utils
+        this.fb = fb;
+        this.apiai = apiai;
+
         this.server.get('/', (req, res, next) => {
             res.send('Nothing to see here...');
         });
