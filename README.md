@@ -8,6 +8,7 @@ We believe the beginning of a successful bot has little to do with engineering a
 That's why we've open sourced our Facebook Messenger node.js code base so you can get all the latest features from API.AI, Facebook Messenger and Analytics like Dashbot and BotMetrics. While setting yourself up for success with a robust and extensible code base when you've tested your assumptions and are ready for an engineer to build domain specific features.
 
 ## Features
+* Emjoi Support 
 * Configurable 'Get Started Greeting'
 * Configurable Messenger Action Menu
 * Configurable User Onboarding Messages
@@ -31,6 +32,8 @@ That's why we've open sourced our Facebook Messenger node.js code base so you ca
 * Track Stack Traces with Sentry
 
 ## Roadmap
+* Facebook Webviews
+* Docker Stack Quick Start
 * Rabbit MQ Support
 
 ## Installation
