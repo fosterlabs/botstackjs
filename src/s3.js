@@ -27,6 +27,31 @@ function putFileInS3ByUrl(url, key, callback) {
     });
 }
 
+function putFileInS3ByUrlAsync(url, key) {
+    return new Promise((resolve, reject) => {
+        console.log('requesting image file');
+        request({
+            url: url,
+            method: 'GET',
+            encoding: null,
+        }, (err, response, body) => {
+            if (err) {
+                console.log('Error in image get req', err);
+                reject(err);
+            } else {
+                console.log('sending to s3');
+                putFileInS3(response.body, key, (error, data) => {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve(data);
+                    }
+                });
+            }
+        });
+    })
+}
+
 function putFileInS3(fileData, key, callback) {
     let s3bucket = new AWS.S3({ params: { Bucket: bucketName } });
 
@@ -40,6 +65,25 @@ function putFileInS3(fileData, key, callback) {
     s3bucket.upload(params, callback);
 }
 
+function putFileInS3Async(fileData, key) {
+    return new Promise((resolve, reject) => {
+        let s3bucket = new AWS.S3({ params: { Bucket: bucketName } });
+        let params = {
+            Key: key,
+            Body: fileData,
+            ContentType: 'application/octet-stream',
+            ACL: 'public-read'
+        };
+        s3bucket.upload(params, (err, data) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(data);
+            }
+        })
+    })
+}
+
 function getUploadStream(key){
     let upload = request({
         method: 'PUT',
@@ -51,5 +95,7 @@ function getUploadStream(key){
 }
 
 exports.putFileInS3ByUrl = putFileInS3ByUrl;
+exports.putFileInS3ByUrlAsync = putFileInS3ByUrlAsync;
 exports.putFileInS3 = putFileInS3;
+exports.putFileInS3Async = putFileInS3Async;
 exports.getUploadStream = getUploadStream;

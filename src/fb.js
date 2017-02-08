@@ -432,3 +432,4 @@ exports.youtubeVideoCard = youtubeVideoCard;
 exports.greetingText = greetingText;
 exports.getStartedButton = getStartedButton;
 exports.persistentMenu = persistentMenu;
+exports.imageReply = imageReply;

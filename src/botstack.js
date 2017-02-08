@@ -8,6 +8,7 @@ const apiai = require('./api-ai.js');
 const log = require('./log.js');
 const sessionStore = require('./session.js');
 const db = require('./dynamodb.js');
+const s3 = require('./s3.js');
 const co = Promise.coroutine;
 
 class BotStack {
@@ -21,6 +22,7 @@ class BotStack {
         // utils
         this.fb = fb;
         this.apiai = apiai;
+        this.s3 = s3;
 
         this.server.get('/', (req, res, next) => {
             res.send('Nothing to see here...');
