@@ -7,6 +7,13 @@ const log = require("./log.js");
 const Q = require('q');
 
 let processMessagesFromApiAi = co(function* (apiaiResponse, senderID) {
+    if (!'messages' in apiaiResponse) {
+        log.debug("Response from API.AI not contains messages", {
+            module: "botstack:fb",
+            response: apiaiResponse
+        });
+        return;
+    }
     for (let message of apiaiResponse.messages) {
         let replyMessage = null;
         log.debug("Process message from API.AI", {
@@ -30,7 +37,7 @@ let processMessagesFromApiAi = co(function* (apiaiResponse, senderID) {
             case 4: // custom payload
                 replyMessage = customMessageReply(message);
                 break;
-        }
+        };
         reply(replyMessage, senderID);
     }
 });

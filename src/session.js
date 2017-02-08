@@ -8,7 +8,9 @@ const redis = require('redis');
 Promise.promisifyAll(redis.RedisClient.prototype);
 Promise.promisifyAll(redis.Multi.prototype);
 
-const client = redis.createClient(process.env.REDIS_URL || "redis://localhost");
+const REDIS_URL = process.env.REDIS_URL || "redis://localhost";
+console.log(`REDIS_URL: ${REDIS_URL}`);
+const client = redis.createClient(REDIS_URL);
 
 const uuid = require('uuid');
 const maxSessionAge_ms = 1000 * 60 * 180;
