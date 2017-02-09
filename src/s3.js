@@ -39,8 +39,14 @@ function putFileInS3ByUrlAsync(url, key) {
                 console.log('Error in image get req', err);
                 reject(err);
             } else {
+                if (response.headers['content-type'] == "image/png") {
+                    key = key + ".png";
+                };
+                if (response.headers['content-type'] == "image/jpeg") {
+                    key = key + ".jpg";
+                };
                 console.log('sending to s3');
-                putFileInS3(response.body, key, (error, data) => {
+                putFileInS3(response.body, key, response.headers['content-type'], (error, data) => {
                     if (error) {
                         reject(error);
                     } else {
@@ -52,13 +58,13 @@ function putFileInS3ByUrlAsync(url, key) {
     })
 }
 
-function putFileInS3(fileData, key, callback) {
+function putFileInS3(fileData, key, contentType, callback) {
     let s3bucket = new AWS.S3({ params: { Bucket: bucketName } });
 
     let params = {
         Key: key,
         Body: fileData,
-        ContentType: 'application/octet-stream',
+        ContentType: contentType || 'application/octet-stream',
         ACL: 'public-read'
     };
 
