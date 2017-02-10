@@ -24,7 +24,9 @@ class BotStack {
         this.apiai = apiai;
         this.s3 = s3;
 
-        this.fb.getStartedButton();
+        this.fb.getStartedButton().then(x => {
+            log.debug("Started button done", { module: "botstack:constructor", result: x.result});
+        })
 
         this.server.get('/', (req, res, next) => {
             res.send('Nothing to see here...');
