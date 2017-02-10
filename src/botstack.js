@@ -24,6 +24,8 @@ class BotStack {
         this.apiai = apiai;
         this.s3 = s3;
 
+        this.fb.getStartedButton();
+
         this.server.get('/', (req, res, next) => {
             res.send('Nothing to see here...');
         });
