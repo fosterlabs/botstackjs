@@ -1,5 +1,6 @@
 "use strict";
 
+const fs = require('fs');
 const Promise = require('bluebird');
 const restify = require('restify');
 const fb = require("./fb");
@@ -10,6 +11,13 @@ const sessionStore = require('./session.js');
 const db = require('./dynamodb.js');
 const s3 = require('./s3.js');
 const co = Promise.coroutine;
+const conf = {};
+
+function checkConfig() {
+    if (fs.existsSync("./conf/conf.json")) {
+        conf = require("./conf/conf.json");
+    }
+}
 
 class BotStack {
     constructor(botName) {
@@ -24,9 +32,15 @@ class BotStack {
         this.apiai = apiai;
         this.s3 = s3;
 
-        this.fb.getStartedButton().then(x => {
-            log.debug("Started button done", { module: "botstack:constructor", result: x.result});
-        })
+        if ('getStartedButtonText' in conf) {
+            this.fb.getStartedButton(conf.getStartedButtonText).then(x => {
+                log.debug("Started button done", { module: "botstack:constructor", result: x.result});
+            });
+        } else {
+            this.fb.getStartedButton().then(x => {
+                log.debug("Started button done", { module: "botstack:constructor", result: x.result});
+            });
+        }
 
         this.server.get('/', (req, res, next) => {
             res.send('Nothing to see here...');
