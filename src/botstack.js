@@ -32,6 +32,10 @@ class BotStack {
         this.apiai = apiai;
         this.s3 = s3;
 
+        if (Object.keys(conf).length == 0) {
+            log.debug("Started with default config (no configuration file found)", { module: "botstack:constructor", result: x.result});
+        }
+
         if ('getStartedButtonText' in conf) {
             this.fb.getStartedButton(conf.getStartedButtonText).then(x => {
                 log.debug("Started button done", { module: "botstack:constructor", result: x.result});
