@@ -38,7 +38,7 @@ let processMessagesFromApiAi = co(function* (apiaiResponse, senderID) {
                 replyMessage = customMessageReply(message);
                 break;
         };
-        reply(replyMessage, senderID);
+        yield reply(replyMessage, senderID);
     }
 });
 
