@@ -40,7 +40,13 @@ class BotStack {
             this.fb.getStartedButton().then(x => {
                 log.debug("Started button done", { module: "botstack:constructor", result: x.result});
             });
-        }
+        };
+
+        if ('persistentMenu' in conf) {
+            this.fb.persistentMenu(conf.persistentMenu).then(x => {
+                log.debug("Persistent menu done", { module: "botstack:constructor", result: x.result});
+            })
+        };
 
         this.server.get('/', (req, res, next) => {
             res.send('Nothing to see here...');

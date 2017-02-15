@@ -1,3 +1,6 @@
 {
-  "getStartedButtonText": "Get Started"
+  "getStartedButtonText": "Get Started",
+  "persistentMenu": [
+    {"type": "postback", "title": "Help", "payload": "Help"}
+  ]
 }
