@@ -2,5 +2,6 @@
   "getStartedButtonText": "Get Started",
   "persistentMenu": [
     {"type": "postback", "title": "Help", "payload": "Help"}
-  ]
+  ],
+  "welcomeText": "Change this welcome text in conf/conf.json file"
 }

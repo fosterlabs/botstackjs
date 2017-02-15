@@ -48,6 +48,12 @@ class BotStack {
             })
         };
 
+        if ('welcomeText' in conf) {
+            this.fb.greetingText(conf.welcomeText).then(x => {
+                log.debug("Welcome text done", { module: "botstack:constructor", result: x.result});
+            })
+        };
+
         this.server.get('/', (req, res, next) => {
             res.send('Nothing to see here...');
         });
