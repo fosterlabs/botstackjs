@@ -1,6 +1,7 @@
 "use strict";
 
 const fs = require('fs');
+const path = require('path');
 const Promise = require('bluebird');
 const restify = require('restify');
 const fb = require("./fb");
@@ -11,11 +12,14 @@ const sessionStore = require('./session.js');
 const db = require('./dynamodb.js');
 const s3 = require('./s3.js');
 const co = Promise.coroutine;
-const conf = {};
+
+let conf = {};
 
 function checkConfig() {
-    if (fs.existsSync("./conf/conf.json")) {
-        conf = require("./conf/conf.json");
+    const basePath = path.dirname(require.main.filename);
+    const configPath = path.join(basePath, "conf/conf.json");
+    if (fs.existsSync(configPath)) {
+        conf = require(configPath);
     }
 }
 
@@ -32,8 +36,12 @@ class BotStack {
         this.apiai = apiai;
         this.s3 = s3;
 
+        checkConfig();
+
         if (Object.keys(conf).length == 0) {
             log.debug("Started with default config (no configuration file found)", { module: "botstack:constructor"});
+        } else {
+            log.debug("Custom config file loaded", { module: "botstack:constructor"});
         }
 
         if ('getStartedButtonText' in conf) {
