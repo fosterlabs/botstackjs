@@ -33,7 +33,7 @@ class BotStack {
         this.s3 = s3;
 
         if (Object.keys(conf).length == 0) {
-            log.debug("Started with default config (no configuration file found)", { module: "botstack:constructor", result: x.result});
+            log.debug("Started with default config (no configuration file found)", { module: "botstack:constructor"});
         }
 
         if ('getStartedButtonText' in conf) {
