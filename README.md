@@ -1,7 +1,5 @@
 ## BotStackjs
 
-### IMPORTANT: We are currently re-factoring and moving code from our active bots and trying work out the best method to package up the 3rd party services (i.e. RDIS, Sentry, RDIS, Mongo DB) with out blowing out costs. Some features and functionality may not be available. Message if there is something particular you are after.
-
 ## Why?
 We believe the beginning of a successful bot has little to do with engineering and everything to do with the skill of the product owner in acquiring users and keeping them faster than their competition.
 
@@ -9,31 +7,35 @@ That's why we've open sourced our Facebook Messenger node.js code base so you ca
 
 ## Features
 * Emjoi Support 
-* Configurable 'Get Started Greeting'
-* Configurable Messenger Action Menu
-* Configurable User Onboarding Messages
-* M.Me referals - Track different links placed in different channels to see which is most effective
-* API.AI Content Support (Image, Quick Replys, Card, Custom Payload)
-* Integrated analytics for DashBot & BotMetrics
+* Configurable 'Greeting, Get Started Button & Action Menu'
+* Simple User Onboarding Design
+* Facebook Referral Support- Track different links placed in different channels to see which is most effective
+* Facebook Subscription Support - Push messages to users
+* NLP - Inuitive and easy use Natural Langage Programming
+* Easily setup FB structured messages (Image, Quick Replys, Card, Custom Payload)
+* Analytics and Insights
+* Broadcast to users
 
 ## Stack
 * BotStackjs - clean modular re-usable libraries 
 * Node.js - Scalable fast code
 * API.AI - Best in class Natural Language Processing
-* DashBot & BotMetrics - Insightful analytics and powerful broadcast
-* Mongo DB - Open-source database to user settings
-* Redis - In-memory cache storage for thing like user sessions
+* BotMetrics - Insightful analytics
+* DashBot - Broadcast messages to users
+* Mongo DB - Open-source database to user settings and user session management
+* Redis [Optional] - In-memory cache storage for thing like user sessions
+* Docker - Management and simplified deployment of services
+
 
 ## Code
-* Subscriber service with Cron
+* Subscriber service support with Vue
 * Better Promise Support with Bluebird and request-promise
-* Solid Test Coverage
+* Good Test Coverage
 * Structured logging with Winston - specify additional metadata (like session id, user id, module name, etc)
 * Track Stack Traces with Sentry
 
 ## Roadmap
 * Facebook Webviews
-* Docker Stack Quick Start
 * Rabbit MQ Support
 
 ## Installation
