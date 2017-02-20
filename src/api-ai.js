@@ -62,7 +62,11 @@ let processEvent = co(function* (eventName, senderId) {
                     });
                     resolve(null);
                 } else if (isDefined(messages)) {
-                    resolve(messages);
+                    let returnData = {
+                        messages: messages,
+                        response: response
+                    };
+                    resolve(returnData);
                 }
             }
         });

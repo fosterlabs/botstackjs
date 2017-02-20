@@ -1,5 +1,7 @@
 "use strict";
 
+const fs = require('fs');
+const path = require('path');
 const Promise = require('bluebird');
 const restify = require('restify');
 const fb = require("./fb");
@@ -8,7 +10,18 @@ const apiai = require('./api-ai.js');
 const log = require('./log.js');
 const sessionStore = require('./session.js');
 const db = require('./dynamodb.js');
+const s3 = require('./s3.js');
 const co = Promise.coroutine;
+
+let conf = {};
+
+function checkConfig() {
+    const basePath = path.dirname(require.main.filename);
+    const configPath = path.join(basePath, "conf/conf.json");
+    if (fs.existsSync(configPath)) {
+        conf = require(configPath);
+    }
+}
 
 class BotStack {
     constructor(botName) {
@@ -21,6 +34,37 @@ class BotStack {
         // utils
         this.fb = fb;
         this.apiai = apiai;
+        this.s3 = s3;
+
+        checkConfig();
+
+        if (Object.keys(conf).length == 0) {
+            log.debug("Started with default config (no configuration file found)", { module: "botstack:constructor"});
+        } else {
+            log.debug("Custom config file loaded", { module: "botstack:constructor"});
+        }
+
+        if ('getStartedButtonText' in conf) {
+            this.fb.getStartedButton(conf.getStartedButtonText).then(x => {
+                log.debug("Started button done", { module: "botstack:constructor", result: x.result});
+            });
+        } else {
+            this.fb.getStartedButton().then(x => {
+                log.debug("Started button done", { module: "botstack:constructor", result: x.result});
+            });
+        };
+
+        if ('persistentMenu' in conf) {
+            this.fb.persistentMenu(conf.persistentMenu).then(x => {
+                log.debug("Persistent menu done", { module: "botstack:constructor", result: x.result});
+            })
+        };
+
+        if ('welcomeText' in conf) {
+            this.fb.greetingText(conf.welcomeText).then(x => {
+                log.debug("Welcome text done", { module: "botstack:constructor", result: x.result});
+            })
+        };
 
         this.server.get('/', (req, res, next) => {
             res.send('Nothing to see here...');
