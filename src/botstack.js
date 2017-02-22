@@ -35,6 +35,7 @@ class BotStack {
         this.fb = fb;
         this.apiai = apiai;
         this.s3 = s3;
+        this.log = log;
 
         checkConfig();
 
