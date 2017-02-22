@@ -37,6 +37,9 @@ let processMessagesFromApiAi = co(function* (apiaiResponse, senderID) {
             case 4: // custom payload
                 replyMessage = customMessageReply(message);
                 break;
+            default:
+                log.error("Unknown message type", { module: "botstack:fb "});
+                break;
         };
         yield reply(replyMessage, senderID);
     }
@@ -425,6 +428,7 @@ exports.processMessagesFromApiAi = processMessagesFromApiAi;
 exports.textMessage = textMessage;
 exports.quickReply = quickReply;
 exports.genericMessage = genericMessage;
+exports.structuredMessage = structuredMessage;
 exports.imageCard = imageCard;
 exports.imageAttachment = imageAttachment;
 exports.reply = reply;
