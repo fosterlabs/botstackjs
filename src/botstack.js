@@ -28,6 +28,20 @@ class BotStack {
         botName = typeof(botName) !== 'undefined' ? botName: "default bot";
         this.botName = botName;
         this.server = restify.createServer();
+
+        checkConfig();
+
+        if ('BOTSTACK_STATIC' in process.env) {
+            if (!('BOTSTACK_URL' in process.env)) {
+                throw new Error("BOTSTACK_URL not found");
+                return;
+            } else {
+                this.server.get(/\/public\/?.*/, restify.serveStatic({
+                    directory: process.env.BOTSTACK_STATIC
+                }));
+            }
+        }
+
         this.server.use(restify.queryParser());
         this.server.use(restify.bodyParser());
 
@@ -36,8 +50,6 @@ class BotStack {
         this.apiai = apiai;
         this.s3 = s3;
         this.log = log;
-
-        checkConfig();
 
         if (Object.keys(conf).length == 0) {
             log.debug("Started with default config (no configuration file found)", { module: "botstack:constructor"});
