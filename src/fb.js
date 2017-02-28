@@ -1,4 +1,5 @@
-﻿const dashbot = require('dashbot')(process.env.DASHBOT_API_KEY).facebook;
+﻿//const dashbot = require('dashbot')(process.env.DASHBOT_API_KEY).facebook;
+const dashbot = require('./dashbot')('facebook');
 const request = require('request');
 const rp = require('request-promise');
 const Promise = require('bluebird');
