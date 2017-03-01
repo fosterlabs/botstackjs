@@ -1,1 +1,2 @@
-const botstack = require('../../index.js');
+require('dotenv').config();
+module.exports = require('./lib/app.js')

@@ -31,6 +31,15 @@ class BotStack {
 
         checkConfig();
 
+        if ('subscribe_to' in conf) {
+            // subscribe to redis channel
+            this.subscriber = require('./redis');
+            this.subscriber.on("message", (channel, message) => {
+                this.subscription(message);
+            });
+            this.subscriber.subscribe(conf.subscribe_to);
+        }
+
         if ('BOTSTACK_STATIC' in process.env) {
             if (!('BOTSTACK_URL' in process.env)) {
                 throw new Error("BOTSTACK_URL not found");
@@ -117,6 +126,10 @@ class BotStack {
             return next();
         });
     };
+
+    subscription(message) {
+
+    }
 
     textMessage(message, senderID) {
         co(function* (){

@@ -1,6 +1,13 @@
 ﻿const Promise = require('bluebird');
 const co = Promise.coroutine;
+
 const apiai = require('apiai');
+
+
+if (!('APIAI_ACCESS_TOKEN' in process.env)) {
+
+}
+
 const sessionStore = require('./session.js');
 const log = require('./log.js');
 

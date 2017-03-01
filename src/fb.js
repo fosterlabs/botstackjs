@@ -367,8 +367,40 @@ function genericMessage() {
         }
     }
 }
+
+let reply = co(function* (message, senderId) {
+    if (message == null) {
+        log.debug("This message ignored to send", {
+            module: "botstack:fb",
+            senderId: senderId,
+            message: message
+        });
+        return;
+    }
+    log.debug("Sending message", {
+        module: "botstack:fb",
+        senderId: senderId,
+        message: message
+    });
+    let reqData = {
+        url: 'https://graph.facebook.com/v2.6/me/messages',
+        qs: {
+            access_token: process.env.FB_PAGE_ACCESS_TOKEN
+        },
+        method: 'POST',
+        json: {
+            recipient: {
+                id: senderId
+            },
+            message: message
+        },
+        resolveWithFullResponse: true
+    };
+    let res = yield rp(reqData);
+    debugger;
+});
 //--------------------------------------------------------------------------------
-function reply(message, senderId) {
+function reply2(message, senderId) {
     if (message == null) {
         log.debug("This message ignored to send", {
             module: "botstack:fb",

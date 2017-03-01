@@ -3,18 +3,8 @@
 //store the date and time when a session is added or updated so they can be pruned
 const Promise = require('bluebird');
 const co = Promise.coroutine;
-const redis = require('redis');
 
-Promise.promisifyAll(redis.RedisClient.prototype);
-Promise.promisifyAll(redis.Multi.prototype);
-
-const REDIS_URL = process.env.REDIS_URL || "redis://localhost";
-const redisOpts = {};
-if ('REDIS_PASSWORD' in process.env) {
-    redisOpts.password = process.env.REDIS_PASSWORD;
-}
-console.log(`REDIS_URL: ${REDIS_URL}`);
-const client = redis.createClient(REDIS_URL, redisOpts);
+const client = require('./redis');
 
 const uuid = require('uuid');
 const maxSessionAge_ms = 1000 * 60 * 180;
