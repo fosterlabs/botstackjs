@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const Promise = require('bluebird');
+const lodash = require('lodash');
 const restify = require('restify');
 const fb = require("./fb");
 const botmetrics = require('./bot-metrics.js');
@@ -14,12 +15,53 @@ const s3 = require('./s3.js');
 const co = Promise.coroutine;
 
 let conf = {};
+const envVars = [
+    { name: "FB_PAGE_ACCESS_TOKEN", required: true, module: ["fb"] },
+    { name: "FB_VERIFY_TOKEN", required: true, module: ["fb"] },
+    { name: "APIAI_ACCESS_TOKEN", required: true, module: ["fb"] },
+    { name: "AWS_ACCESS_KEY", required: false, module: ["s3"] },
+    { name: "AWS_SECRET_KEY", required: false, module: ["s3"] },
+    { name: "BUCKET_NAME", required: false, module: ["s3"] },
+    { name: "BOTLYTICS_API_KEY", required: false, module: ["botlyptics"] },
+    { name: "BOTMETRICS_TOKEN", required: false, module: ["botmetrics"] },
+    { name: "DASHBOT_API_KEY", required: false, module: ["dashbot"] },
+    { name: "MONGODB_URI", required: true, module: ["db"] },
+    { name: "REDIS_URL", required: false, module: ["session"] },
+    { name: "REDIS_PASSWORD", required: false, module: ["session"] }
+];
+let enabledModules = [];
 
 function checkConfig() {
     const basePath = path.dirname(require.main.filename);
     const configPath = path.join(basePath, "conf/conf.json");
     if (fs.existsSync(configPath)) {
         conf = require(configPath);
+    }
+}
+
+function checkEnvs() {
+    for (let envVar of envVars) {
+        if (envVar.name in process.env) {
+            enabledModules = lodash.union(enabledModules, envVar.module);
+        }
+    }
+    let requiredModules = lodash.flatten(lodash.map(lodash.filter(envVars, x => x.required), x => x.module));
+    enabledModules = lodash.union(enabledModules, requiredModules);
+
+    let checkVars = [];
+    for (let c of enabledModules) {
+        let temp = lodash.map(lodash.filter(envVars, x => lodash.includes(x.module, c)), x => x.name);
+        checkVars = lodash.union(checkVars, temp);
+    }
+
+    let notFoundEnvs = [];
+    for (let e of checkVars) {
+        if (!(e in process.env)) {
+            notFoundEnvs.push(e);
+        }
+    }
+    if (notFoundEnvs.length > 0) {
+        throw new Error("Not found env variables: " + notFoundEnvs.join(","));
     }
 }
 
@@ -30,14 +72,18 @@ class BotStack {
         this.server = restify.createServer();
 
         checkConfig();
+        checkEnvs();
 
-        if ('subscribe_to' in conf) {
-            // subscribe to redis channel
+        if ('subscribeTo' in conf) {
             this.subscriber = require('./redis');
             this.subscriber.on("message", (channel, message) => {
                 this.subscription(message);
             });
-            this.subscriber.subscribe(conf.subscribe_to);
+            this.subscriber.subscribe(conf.subscribeTo);
+            log.debug("Subscribed to Redis channel", {
+                module: "botstack:constructor",
+                channel: conf.subscribeTo
+            });
         }
 
         if ('BOTSTACK_STATIC' in process.env) {
@@ -128,7 +174,9 @@ class BotStack {
     };
 
     subscription(message) {
-
+        log.debug("Subscription method not implemented", {
+            module: "botstack:subscription"
+        });
     }
 
     textMessage(message, senderID) {
