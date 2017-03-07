@@ -397,7 +397,6 @@ let reply = co(function* (message, senderId) {
         resolveWithFullResponse: true
     };
     let res = yield rp(reqData);
-    debugger;
 });
 //--------------------------------------------------------------------------------
 function reply2(message, senderId) {

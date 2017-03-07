@@ -26,8 +26,7 @@ const envVars = [
     { name: "BOTMETRICS_TOKEN", required: false, module: ["botmetrics"] },
     { name: "DASHBOT_API_KEY", required: false, module: ["dashbot"] },
     { name: "MONGODB_URI", required: true, module: ["db"] },
-    { name: "REDIS_URL", required: false, module: ["session"] },
-    { name: "REDIS_PASSWORD", required: false, module: ["session"] }
+    { name: "REDIS_URL", required: false, module: ["session"] }
 ];
 let enabledModules = [];
 
