@@ -50,11 +50,20 @@ let processMessagesFromApiAi = co(function* (apiaiResponse, senderID) {
 function structuredMessage(message) {
     let buttons = [];
     for (let button of message.buttons) {
-        buttons.push({
-            "type": "postback",
-            "title": button.text,
-            "payload": button.postback
-        });
+        if ('postback' in button) {
+            buttons.push({
+                "type": "postback",
+                "title": button.text,
+                "payload": button.postback
+            });
+        } else if ('url' in button) {
+            buttons.push({
+                "type": "web_url",
+                "title": button.text,
+                "url": button.url
+            });
+        }
+
     }
 
     let element = {
