@@ -4,6 +4,5 @@
     {"type": "postback", "title": "Help", "payload": "Help"},
     {"type": "postback", "title": "Set Location", "payload": "Set Location"}
   ],
-  "welcomeText": "DemoBot is ready to test",
-  "subscribeTo": "demo"
+  "welcomeText": "DemoBot is ready to test"
 }

@@ -322,4 +322,12 @@ class BotStack {
     }
 }
 
+process.on('uncaughtException', (err) => {
+    log.error(err);
+});
+
+process.on('unhandledRejection', (reason, p) => {
+    log.error(reason);
+});
+
 module.exports = BotStack;
