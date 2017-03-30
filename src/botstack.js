@@ -7,6 +7,7 @@ const lodash = require('lodash');
 const restify = require('restify');
 const fb = require("./fb");
 const botmetrics = require('./bot-metrics.js');
+const dashbot = require('./dashbot.js')('facebook');
 const apiai = require('./api-ai.js');
 const log = require('./log.js');
 const sessionStore = require('./session.js');
@@ -104,6 +105,7 @@ class BotStack {
         this.apiai = apiai;
         this.s3 = s3;
         this.log = log;
+        this.dashbot = dashbot;
 
         if (Object.keys(conf).length == 0) {
             log.debug("Started with default config (no configuration file found)", { module: "botstack:constructor"});
@@ -221,29 +223,45 @@ class BotStack {
                         let isNewSession = yield sessionStore.checkExists(senderID);
                         const isPostbackMessage = message.postback ? true : false;
                         let isTextMessage = false;
+                        const isReferral = lodash.get(message, 'postback.referral') || lodash.get(message, 'referral');
                         if ('message' in message && 'text' in message.message) {
                             isTextMessage = true;
+                        }
+                        if (isReferral) {
+                            self.onReferral(isReferral.ref, senderID);
                         }
                         yield sessionStore.set(senderID);
                         if (isTextMessage) {
                             if (message.message.text == "Get Started") {
+                                console.log(message);
                                 self.welcomeMessage(message.message.text, senderID);
                             } else {
                                 self.textMessage(message, senderID);
                             }
                         } else if (isPostbackMessage) {
                             if (message.postback.payload == "Get Started") {
+                                console.log(message);
                                 self.welcomeMessage(message.postback.payload, senderID);
                             } else {
                                 self.postbackMessage(message, senderID);
                             }
                         } else {
-                            self.fallback(message, senderID);
+                            if (!isReferral) {
+                                self.fallback(message, senderID);
+                            }
                         }
                     }
                 }
             })();
         }
+    }
+
+    onReferral(referralValue, senderID) {
+        log.debug("Process referral", {
+            module: "botstack:onreferral",
+            senderId: senderID
+        });
+        this.dashbot.log({senderID, ref: referralValue});
     }
 
     welcomeMessage(messageText, senderID) {
