@@ -9,10 +9,20 @@ const fb = require("./fb");
 const botmetrics = require('./bot-metrics.js');
 const apiai = require('./api-ai.js');
 const log = require('./log.js');
-const sessionStore = require('./session.js');
+
+process.on('unhandledRejection', (reason, p) => {
+    // console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.log(`Caught exception: ${err}`);
+});
+
+const sessionStore = require('./session.js')();
+const state = require('./state.js')();
 const db = require('./dynamodb.js');
 const s3 = require('./s3.js');
 const co = Promise.coroutine;
+const { BotStackEmitterInit, BotStackCheck, BotStackEvents } = require('./events.js');
 
 let conf = {};
 const envVars = [
@@ -25,7 +35,7 @@ const envVars = [
     { name: "BOTLYTICS_API_KEY", required: false, module: ["botlyptics"] },
     { name: "BOTMETRICS_TOKEN", required: false, module: ["botmetrics"] },
     { name: "DASHBOT_API_KEY", required: false, module: ["dashbot"] },
-    { name: "MONGODB_URI", required: true, module: ["db"] },
+    { name: "MONGODB_URI", required: false, module: ["db"] },
     { name: "REDIS_URL", required: false, module: ["session"] }
 ];
 let enabledModules = [];
@@ -39,7 +49,7 @@ function checkConfig() {
 }
 
 function checkEnvs() {
-    for (let envVar of envVars) {
+    for (const envVar of envVars) {
         if (envVar.name in process.env) {
             enabledModules = lodash.union(enabledModules, envVar.module);
         }
@@ -54,7 +64,7 @@ function checkEnvs() {
     }
 
     let notFoundEnvs = [];
-    for (let e of checkVars) {
+    for (const e of checkVars) {
         if (!(e in process.env)) {
             notFoundEnvs.push(e);
         }
@@ -99,6 +109,9 @@ class BotStack {
         this.server.use(restify.queryParser());
         this.server.use(restify.bodyParser());
 
+        this.events = BotStackEmitterInit;
+        this.state = state;
+
         // utils
         this.fb = fb;
         this.apiai = apiai;
@@ -124,13 +137,13 @@ class BotStack {
         if ('persistentMenu' in conf) {
             this.fb.persistentMenu(conf.persistentMenu).then(x => {
                 log.debug("Persistent menu done", { module: "botstack:constructor", result: x.result});
-            })
+            });
         };
 
         if ('welcomeText' in conf) {
             this.fb.greetingText(conf.welcomeText).then(x => {
                 log.debug("Welcome text done", { module: "botstack:constructor", result: x.result});
-            })
+            });
         };
 
         this.server.get('/', (req, res, next) => {
@@ -187,6 +200,13 @@ class BotStack {
                 senderId: senderID,
                 message: message
             });
+            if (BotStackCheck("textMessage")) {
+                BotStackEvents.emit("textMessage", {
+                    senderID,
+                    message
+                });
+                return;
+            }
             log.debug("Sending to API.AI", {
                 module: "botstack:textMessage",
                 senderId: senderID,
@@ -220,12 +240,20 @@ class BotStack {
                         let senderID = message.sender.id;
                         let isNewSession = yield sessionStore.checkExists(senderID);
                         const isPostbackMessage = message.postback ? true : false;
-                        let isTextMessage = false;
-                        if ('message' in message && 'text' in message.message) {
-                            isTextMessage = true;
-                        }
+                        const isQuickReplyPayload = lodash.get(message, 'message.quick_reply.payload') ? true : false;
+                        const isTextMessage = lodash.get(message, 'message.text') ? true : false;
+                        log.debug("Detect kind of message", {
+                            module: "botstack:webhookPost",
+                            senderID,
+                            isNewSession,
+                            isPostbackMessage,
+                            isQuickReplyPayload,
+                            isTextMessage
+                        });
                         yield sessionStore.set(senderID);
-                        if (isTextMessage) {
+                        if (isQuickReplyPayload) {
+                            self.quickReplyPayload(message, senderID);
+                        } else if (isTextMessage) {
                             if (message.message.text == "Get Started") {
                                 self.welcomeMessage(message.message.text, senderID);
                             } else {
@@ -243,7 +271,7 @@ class BotStack {
                     }
                 }
             })();
-        }
+        };
     }
 
     welcomeMessage(messageText, senderID) {
@@ -253,6 +281,13 @@ class BotStack {
             senderId: senderID
         });
         co(function* (){
+            if (BotStackCheck("welcomeMessage")) {
+                BotStackEvents.emit("welcomeMessage", {
+                    senderID,
+                    messageText
+                });
+                return;
+            };
             try {
                 let apiaiResp = yield apiai.processEvent("FACEBOOK_WELCOME", senderID);
                 log.debug("Facebook welcome result", {
@@ -283,6 +318,13 @@ class BotStack {
                 text: text
             });
             botmetrics.logUserRequest(text, senderID);
+            if (BotStackCheck("postbackMessage")) {
+                BotStackEvents.emit("postbackMessage", {
+                    senderID,
+                    postback
+                });
+                return;
+            };
             log.debug("Sending to API.AI", {
                 module: "botstack:postbackMessage",
                 senderId: senderID,
@@ -303,6 +345,25 @@ class BotStack {
             }
         })();
     };
+
+    quickReplyPayload(message, senderID) {
+        const text = lodash.get(message, 'message.quick_reply.payload');
+        log.debug("Process quick reply payload", {
+            module: "botstack: quickReplyPayload",
+            senderId: senderID,
+            text
+        });
+        botmetrics.logUserRequest(text, senderID);
+        if (BotStackCheck("quickReplyPayload")) {
+            BotStackEvents.emit("quickReplyPayload", {
+                senderID,
+                text,
+                message
+            });
+            return;
+        }
+        throw new Error("Not implemented");
+    }
 
     fallback(message, senderID) {
         log.debug("Unknown message", {

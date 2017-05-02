@@ -2,7 +2,7 @@
 const apiai = require("./api-ai.js");
 const botmetrics = require('./bot-metrics.js');
 const dashbot = require('dashbot')(process.env.DASHBOT_API_KEY).facebook;
-const sessionStore = require('./session.js');
+const sessionStore = require('./session.js')();
 const log = require('./log.js');
 
 function processWelcomeMessage(messageText, senderID) {

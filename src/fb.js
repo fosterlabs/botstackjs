@@ -384,7 +384,7 @@ let reply = co(function* (message, senderId) {
             senderId: senderId,
             message: message
         });
-        return;
+        return null;
     }
     log.debug("Sending message", {
         module: "botstack:fb",
@@ -406,6 +406,7 @@ let reply = co(function* (message, senderId) {
         resolveWithFullResponse: true
     };
     let res = yield rp(reqData);
+    return res;
 });
 //--------------------------------------------------------------------------------
 function reply2(message, senderId) {

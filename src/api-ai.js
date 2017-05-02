@@ -3,7 +3,7 @@ const co = Promise.coroutine;
 
 const apiai = require('apiai');
 
-const sessionStore = require('./session.js');
+const sessionStore = require('./session.js')();
 const log = require('./log.js');
 
 const APIAI_ACCESS_TOKEN = process.env.APIAI_ACCESS_TOKEN;
