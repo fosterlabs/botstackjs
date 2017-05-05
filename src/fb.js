@@ -377,6 +377,52 @@ function genericMessage() {
     }
 }
 
+const typing = co(function* (userID, isOn = false) {
+    // mark_seen - Mark last message as read
+    // typing_on - turn typing indicators on
+    // typing_off - turn typing indicators off
+    // Typing indicators are automatically turned off after 20 seconds
+
+    const action = isOn ? "typing_on": "typing_off";
+    const msg = {
+        recipient: {
+            id: userID
+        },
+        sender_action: action
+    };
+    const reqData = {
+        url: "https://graph.facebook.com/v2.6/me/messages",
+        qs: {
+            access_token: process.env.FB_PAGE_ACCESS_TOKEN
+        },
+        resolveWithFullResponse: true,
+        method: "POST",
+        json: msg
+    };
+    try {
+        const resp = yield rp(reqData);
+        if (resp.statusCode == 200) {
+            log.debug("Sent typing to Facebook", {
+                module: "fb",
+                recipientId: userID
+            });
+            return true;
+        } else {
+            log.error("Sent settings to Facebook", {
+                module: "fb",
+                recipientId: userID
+            });
+            return false;
+        }
+        return true;
+    } catch (e) {
+        log.error(e, {
+            module: "fb"
+        });
+        throw e;
+    }
+});
+
 let reply = co(function* (message, senderId) {
     if (message == null) {
         log.debug("This message ignored to send", {
@@ -466,16 +512,20 @@ function reply2(message, senderId) {
     return deferred.promise;
 }
 //--------------------------------------------------------------------------------
-exports.processMessagesFromApiAi = processMessagesFromApiAi;
-exports.textMessage = textMessage;
-exports.quickReply = quickReply;
-exports.genericMessage = genericMessage;
-exports.structuredMessage = structuredMessage;
-exports.imageCard = imageCard;
-exports.imageAttachment = imageAttachment;
-exports.reply = reply;
-exports.youtubeVideoCard = youtubeVideoCard;
-exports.greetingText = greetingText;
-exports.getStartedButton = getStartedButton;
-exports.persistentMenu = persistentMenu;
-exports.imageReply = imageReply;
+
+module.exports = {
+    processMessagesFromApiAi,
+    textMessage,
+    quickReply,
+    genericMessage,
+    structuredMessage,
+    imageCard,
+    imageAttachment,
+    reply,
+    youtubeVideoCard,
+    greetingText,
+    getStartedButton,
+    persistentMenu,
+    imageReply,
+    typing
+};
