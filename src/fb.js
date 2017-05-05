@@ -70,10 +70,10 @@ function structuredMessage(message) {
         "title": message.title,
         "subtitle": message.subtitle,
         "image_url": message.imageUrl
-    }
+    };
 
     if (buttons.length > 0) {
-        element["buttons"] = buttons
+        element["buttons"] = buttons;
     }
 
     return {
@@ -84,7 +84,7 @@ function structuredMessage(message) {
                 "elements": [element]
             }
         }
-    }
+    };
 };
 
 //--------------------------------------------------------------------------------
@@ -94,7 +94,7 @@ function textMessage(message) {
     } else {
         return {
             "text": message
-        }
+        };
     }
 }
 
@@ -131,7 +131,7 @@ function imageReply(message) {
                 url: message.imageUrl || message.url
             }
         }
-    }
+    };
 };
 
 function videoReply(message) {
@@ -142,7 +142,7 @@ function videoReply(message) {
                 url: message.url
             }
         }
-    }
+    };
 }
 
 function audioReply(message) {
@@ -153,7 +153,7 @@ function audioReply(message) {
                 url: message.url
             }
         }
-    }
+    };
 }
 
 function fileReply(message) {
@@ -164,7 +164,7 @@ function fileReply(message) {
                 url: message.url
             }
         }
-    }
+    };
 }
 
 function customMessageReply(message) {
@@ -188,7 +188,7 @@ function customMessageReply(message) {
             }
         }
     }
-}
+};
 
 let setThreadSettings = co(function* (data, method) {
     method = typeof(method) !== 'undefined' ? method: "POST";
@@ -231,7 +231,7 @@ function greetingText(text) {
         greeting: {
             text: text
         }
-    }
+    };
     return setThreadSettings(data);
 }
 
@@ -246,7 +246,7 @@ function getStartedButton(payload) {
         call_to_actions: [
             { payload: payload }
         ]
-    }
+    };
     return setThreadSettings(data);
 }
 
@@ -273,7 +273,7 @@ function deletePersistentMenu() {
     let data = {
         setting_type: "call_to_actions",
         thread_state: "existing_thread"
-    }
+    };
     return setThreadSettings(data, "DELETE");
 }
 
@@ -302,7 +302,7 @@ function imageCard(thumbUrl, downloadUrl, instaUrl, authName) {
                     }]
             }
         }
-    }
+    };
 }
 
 function youtubeVideoCard(thumbUrl, downloadUrl, originalUrl) {
@@ -329,7 +329,7 @@ function youtubeVideoCard(thumbUrl, downloadUrl, originalUrl) {
                     }]
             }
         }
-    }
+    };
 }
 
 function imageAttachment(thumbUrl) {
@@ -340,7 +340,7 @@ function imageAttachment(thumbUrl) {
                 "url": thumbUrl
             }
         }
-    }
+    };
 }
 
 function genericMessage() {
@@ -360,8 +360,8 @@ function genericMessage() {
                     }, {
                         "type": "postback",
                         "title": "Postback",
-                        "payload": "Payload for first element in a generic bubble",
-                    }],
+                        "payload": "Payload for first element in a generic bubble"
+                    }]
                 }, {
                     "title": "Second card",
                     "subtitle": "Element #2 of an hscroll",
@@ -369,12 +369,12 @@ function genericMessage() {
                     "buttons": [{
                         "type": "postback",
                         "title": "Postback",
-                        "payload": "Payload for second element in a generic bubble",
-                    }],
+                        "payload": "Payload for second element in a generic bubble"
+                    }]
                 }]
             }
         }
-    }
+    };
 }
 
 const typing = co(function* (userID, isOn = false) {
@@ -438,7 +438,7 @@ let reply = co(function* (message, senderId) {
         message: message
     });
     let reqData = {
-        url: 'https://graph.facebook.com/v2.6/me/messages',
+        url: 'https://graph.facebook.com/v2.9/me/messages',
         qs: {
             access_token: process.env.FB_PAGE_ACCESS_TOKEN
         },
