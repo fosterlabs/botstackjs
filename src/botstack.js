@@ -238,6 +238,10 @@ class BotStack {
                     let messages = entry.messaging;
                     for (let message of messages) {
                         let senderID = message.sender.id;
+                        const isEcho = lodash.get(message, 'message.is_echo') ? true : false;
+                        if (isEcho) {
+                            continue;
+                        }
                         let isNewSession = yield sessionStore.checkExists(senderID);
                         const isPostbackMessage = message.postback ? true : false;
                         const isQuickReplyPayload = lodash.get(message, 'message.quick_reply.payload') ? true : false;
