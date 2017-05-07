@@ -5,7 +5,13 @@ let stateMap = new Map();
 
 const set = (senderId, stateValue = {}) => {
     return new Promise((resolve, reject) => {
-        stateMap.set(senderId, stateValue);
+        const oldVal = stateMap.get(senderId);
+        if (oldVal) {
+            const newOne = lodash.cloneDeep(lodash.merge(oldVal, stateValue));
+            stateMap.set(senderId, newOne);
+        } else {
+            stateMap.set(senderId, lodash.cloneDeep(stateValue));
+        }
         resolve();
     });
 };
@@ -21,4 +27,11 @@ const get = (senderID) => {
     });
 };
 
-module.exports = { set, get };
+const del = (senderID) => {
+    return new Promise((resolve, reject) => {
+        const result = stateMap.delete(senderID);
+        resolve(result);
+    });
+}
+
+module.exports = { set, get, del };
