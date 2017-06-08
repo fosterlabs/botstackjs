@@ -447,15 +447,22 @@ const attachmentUpload = co(function* (attachmentURL, attachmentType = "video") 
     try {
         const resp = yield rp(reqData);
         if (resp.statusCode == 200) {
-            log.debug("Sent typing to Facebook", {
+            log.debug("Upload file to Facebook", {
                 module: "fb",
-                recipientId: userID
+                url: attachmentURL
             });
-            return true;
-        } else {
-            log.error("Sent settings to Facebook", {
+            return resp.body;
+        } else if (resp.statusCode == 400) {
+            log.error("Upload file to Facebook", {
                 module: "fb",
-                recipientId: userID
+                url: attachmentURL,
+                error: resp.error
+            });
+        } else {
+            log.error("Upload file to Facebook", {
+                module: "fb",
+                url: attachmentURL,
+                response: resp.body
             });
             return false;
         }
