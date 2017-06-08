@@ -193,7 +193,7 @@ function customMessageReply(message) {
 let setThreadSettings = co(function* (data, method) {
     method = typeof(method) !== 'undefined' ? method: "POST";
     let reqData = {
-        url: "https://graph.facebook.com/v2.6/me/thread_settings",
+        url: "https://graph.facebook.com/v2.9/me/thread_settings",
         qs: {
             access_token: process.env.FB_PAGE_ACCESS_TOKEN
         },
@@ -391,7 +391,52 @@ const typing = co(function* (userID, isOn = false) {
         sender_action: action
     };
     const reqData = {
-        url: "https://graph.facebook.com/v2.6/me/messages",
+        url: "https://graph.facebook.com/v2.9/me/messages",
+        qs: {
+            access_token: process.env.FB_PAGE_ACCESS_TOKEN
+        },
+        resolveWithFullResponse: true,
+        method: "POST",
+        json: msg
+    };
+    try {
+        const resp = yield rp(reqData);
+        if (resp.statusCode == 200) {
+            log.debug("Sent typing to Facebook", {
+                module: "fb",
+                recipientId: userID
+            });
+            return true;
+        } else {
+            log.error("Sent settings to Facebook", {
+                module: "fb",
+                recipientId: userID
+            });
+            return false;
+        }
+        return true;
+    } catch (e) {
+        log.error(e, {
+            module: "fb"
+        });
+        throw e;
+    }
+});
+
+const attachmentUpload = co(function* (attachmentURL, attachmentType = "video") {
+    const msg = {
+        message: {
+            attachment: {
+                type: attachmentType,
+                payload: {
+                    url: attachmentURL,
+                    is_reusable: true
+                }
+            }
+        }
+    };
+    const reqData = {
+        url: "https://graph.facebook.com/v2.9/me/message_attachments",
         qs: {
             access_token: process.env.FB_PAGE_ACCESS_TOKEN
         },
@@ -472,7 +517,7 @@ function reply2(message, senderId) {
     });
 
     let reqData = {
-        url: 'https://graph.facebook.com/v2.6/me/messages',
+        url: 'https://graph.facebook.com/v2.9/me/messages',
         qs: {
             access_token: process.env.FB_PAGE_ACCESS_TOKEN
         },
@@ -527,5 +572,6 @@ module.exports = {
     getStartedButton,
     persistentMenu,
     imageReply,
-    typing
+    typing,
+    attachmentUpload
 };
