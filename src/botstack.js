@@ -200,7 +200,7 @@ class BotStack {
                 senderId: senderID,
                 message: message
             });
-            if (dontUseEvents) {
+            if (!dontUseEvents) {
                 if (BotStackCheck("textMessage")) {
                     BotStackEvents.emit("textMessage", {
                         senderID,
