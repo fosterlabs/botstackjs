@@ -191,7 +191,7 @@ class BotStack {
         });
     }
 
-    textMessage(message, senderID) {
+    textMessage(message, senderID, dontUseEvents=false) {
         co(function* (){
             let text = message.message.text;
             botmetrics.logUserRequest(text, senderID);
@@ -200,12 +200,14 @@ class BotStack {
                 senderId: senderID,
                 message: message
             });
-            if (BotStackCheck("textMessage")) {
-                BotStackEvents.emit("textMessage", {
-                    senderID,
-                    message
-                });
-                return;
+            if (dontUseEvents) {
+                if (BotStackCheck("textMessage")) {
+                    BotStackEvents.emit("textMessage", {
+                        senderID,
+                        message
+                    });
+                    return;
+                }
             }
             log.debug("Sending to API.AI", {
                 module: "botstack:textMessage",
