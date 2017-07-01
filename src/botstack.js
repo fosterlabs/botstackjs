@@ -353,22 +353,41 @@ class BotStack {
     };
 
     quickReplyPayload(message, senderID) {
-        const text = lodash.get(message, 'message.quick_reply.payload');
-        log.debug("Process quick reply payload", {
-            module: "botstack: quickReplyPayload",
-            senderId: senderID,
-            text
-        });
-        botmetrics.logUserRequest(text, senderID);
-        if (BotStackCheck("quickReplyPayload")) {
-            BotStackEvents.emit("quickReplyPayload", {
-                senderID,
-                text,
-                message
+        co(function* () {
+            const text = lodash.get(message, 'message.quick_reply.payload');
+            log.debug("Process quick reply payload", {
+                module: "botstack: quickReplyPayload",
+                senderId: senderID,
+                text
             });
-            return;
-        }
-        throw new Error("Not implemented");
+            botmetrics.logUserRequest(text, senderID);
+            if (BotStackCheck("quickReplyPayload")) {
+                BotStackEvents.emit("quickReplyPayload", {
+                    senderID,
+                    text,
+                    message
+                });
+                return;
+            }
+            log.debug("Sending to API.AI", {
+                module: "botstack:quickReplyPayload",
+                senderId: senderID,
+                text
+            });
+            try {
+                let apiaiResp = yield apiai.processTextMessage(text, senderID);
+                fb.processMessagesFromApiAi(apiaiResp, senderID);
+                botmetrics.logServerResponse(apiaiResp, senderID);
+            } catch (err) {
+                log.error(err, {
+                    module: "botstack:quickReplyPayload",
+                    senderId: senderID,
+                    reason: "Error in API.AI response"
+                });
+                fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
+                botmetrics.logServerResponse(err, senderID);
+            }
+        })();
     }
 
     fallback(message, senderID) {
