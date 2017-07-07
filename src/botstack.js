@@ -191,6 +191,23 @@ class BotStack {
         });
     }
 
+    geoLocationMessage(message, senderID) {
+        co(function* () {
+            log.debug("Process GEO location message", {
+                module: "botstack:geoLocationMessage",
+                senderId: senderID,
+                message
+            });
+            if (BotStackCheck("geoLocationMessage")) {
+                BotStackEvents.emit("geoLocationMessage", {
+                    senderID,
+                    message
+                });
+                return;
+            };
+        })();
+    }
+
     textMessage(message, senderID, dontUseEvents=false) {
         co(function* (){
             let text = message.message.text;
@@ -248,17 +265,21 @@ class BotStack {
                         const isPostbackMessage = message.postback ? true : false;
                         const isQuickReplyPayload = lodash.get(message, 'message.quick_reply.payload') ? true : false;
                         const isTextMessage = lodash.get(message, 'message.text') ? true : false;
+                        const isGeoLocationMessage = lodash.get(message, 'message.attachments[0].payload.coordinates') ? true : false;
                         log.debug("Detect kind of message", {
                             module: "botstack:webhookPost",
                             senderID,
                             isNewSession,
                             isPostbackMessage,
                             isQuickReplyPayload,
-                            isTextMessage
+                            isTextMessage,
+                            isGeoLocationMessage
                         });
                         yield sessionStore.set(senderID);
                         if (isQuickReplyPayload) {
                             self.quickReplyPayload(message, senderID);
+                        } else if (isGeoLocationMessage) {
+                            self.geoLocationMessage(message, senderID);
                         } else if (isTextMessage) {
                             if (message.message.text == "Get Started") {
                                 self.welcomeMessage(message.message.text, senderID);

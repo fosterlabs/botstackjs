@@ -32,6 +32,15 @@ const del = (senderID) => {
         const result = stateMap.delete(senderID);
         resolve(result);
     });
+};
+
+const delKey = (senderID, keyName) => {
+    return new Promise((resolve, reject) => {
+        const oldVal = stateMap.get(senderID);
+        delete oldVal[keyName];
+        stateMap.set(senderID, oldVal);
+        resolve();
+    });
 }
 
-module.exports = { set, get, del };
+module.exports = { set, get, del, delKey };
