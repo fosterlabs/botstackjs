@@ -1,6 +1,4 @@
-﻿const Promise = require('bluebird');
-const co = Promise.coroutine;
-
+const lodash = require('lodash');
 const apiai = require('apiai');
 
 const sessionStore = require('./session.js')();
@@ -10,140 +8,108 @@ const APIAI_ACCESS_TOKEN = process.env.APIAI_ACCESS_TOKEN;
 const APIAI_LANG = "en";
 const apiAiService = apiai(APIAI_ACCESS_TOKEN);
 
-function isDefined(obj) {
-    if (typeof obj == 'undefined') {
-        return false;
-    }
-
-    if (!obj) {
-        return false;
-    }
-
-    return obj != null;
-}
-
-let processEvent = co(function* (eventName, senderId) {
-    let sessionId = yield sessionStore.get(senderId);
-    log.debug("Process event", {
-        module: "botstack:api-ai",
-        senderId: senderId,
-        eventName: eventName,
-        sessionId: sessionId
-    });
-
-    let apiAiRequest = apiAiService.eventRequest({
-        name: eventName
-    },{
-        sessionId: sessionId
-    });
-
-    let apiaiResponse = new Promise((resolve, reject) => {
-        apiAiRequest.on('response', response => {
-            log.debug("API.AI responded", {
+function getApiAiResponse({ apiAiRequest, senderID, eventName, message, sessionID } = {
+    eventName: null, message: null
+}) {
+    return new Promise((resolve, reject) => {
+        apiAiRequest.on('response', (response) => {
+            let logParams = {
                 module: "botstack:api-ai",
-                senderId: senderId,
-                eventName: eventName,
-                sessionId: sessionId,
-                response: response
-            });
-            if (isDefined(response.result)) {
+                senderId: senderID,
+                sessionId: sessionID,
+                response
+            };
+
+            if (eventName) {
+                logParams.eventName = eventName;
+            }
+
+            if (message) {
+                logParams.message = message;
+            }
+
+            log.debug("API.AI responded", logParams);
+
+            if (lodash.get(response, 'result')) {
                 log.debug("API.AI result", {
                     module: "botstack:api-ai",
-                    senderId: senderId,
+                    senderId: senderID,
                     result: response.result
                 });
-                let responseText = response.result.fulfillment.speech;
-                let responseData = response.result.fulfillment.data;
-                let messages = response.result.fulfillment.messages;
-                let action = response.result.action;
 
-                if (isDefined(responseData) && isDefined(responseData.facebook)) {
+                const responseText = lodash.get(response.result, 'fulfillment.speech');
+                const responseData = lodash.get(response.result, 'fulfillment.data');
+                const messages = lodash.get(response.result, 'fulfillment.messages');
+                const action = lodash.get(response.result, 'action');
+
+                if (lodash.get(responseData, 'facebook')) {
+                    // FIXME: implement this type of messages
                     log.debug("Response as formatted message", {
                         module: "botstack:api-ai",
-                        senderId: senderId
+                        senderId: senderID
                     });
                     resolve(null);
-                } else if (isDefined(messages)) {
-                    let returnData = {
-                        messages: messages,
-                        response: response
+                } else if (!lodash.isEmpty(messages)) {
+                    const returnData = {
+                        messages,
+                        response
                     };
                     resolve(returnData);
                 }
             }
         });
 
-        apiAiRequest.on('error', error => {
+        apiAiRequest.on('error', (error) => {
             log.debug(error, {
                 module: "botstack:api-ai",
-                senderId: senderId
+                senderId: senderID
             });
             reject(error);
         });
 
         apiAiRequest.end();
     });
+}
 
-    let result = yield apiaiResponse;
+async function processEvent(eventName, senderID) {
+    const sessionID = await sessionStore.get(senderID);
+
+    log.debug("Process event", {
+        module: "botstack:api-ai",
+        senderId: senderID,
+        eventName: eventName,
+        sessionId: sessionID
+    });
+
+    const apiAiRequest = apiAiService.eventRequest({
+        name: eventName
+    },{
+        sessionId: sessionID
+    });
+
+    const result = await getApiAiResponse({ apiAiRequest, senderID, eventName, sessionID });
     return result;
-});
+}
 
-let processTextMessage = co(function* (message, senderId) {
-    let sessionId = yield sessionStore.get(senderId);
+async function processTextMessage(message, senderID) {
+    const sessionID = await sessionStore.get(senderID);
+
     log.debug("Process text message", {
         module: "botstack:api-ai",
-        senderId: senderId,
+        senderId: senderID,
         message: message,
-        sessionId: sessionId
+        sessionId: sessionID
     });
 
-    let apiaiRequest = apiAiService.textRequest(message, {
-        sessionId: sessionId
+    const apiAiRequest = apiAiService.textRequest(message, {
+        sessionId: sessionID
     });
 
-    let apiaiResponse = new Promise((resolve, reject) => {
-        apiaiRequest.on('response', response => {
-            log.debug("API.AI responded", {
-                module: "botstack:api-ai",
-                senderId: senderId,
-                message: message,
-                response: response
-            });
-            if (isDefined(response.result)) {
-                let responseText = response.result.fulfillment.speech;
-                let responseData = response.result.fulfillment.data;
-                let messages = response.result.fulfillment.messages;
-                let action = response.result.action;
-                if (isDefined(responseData) && isDefined(responseData.facebook)) {
-                    log.debug("Response as formatted message", {
-                        module: "botstack:api-ai",
-                        senderId: senderId
-                    });
-                    resolve(null);
-                } else if (isDefined(messages)) {
-                    let returnData = {
-                        messages: messages,
-                        response: response
-                    };
-                    resolve(returnData);
-                }
-            }
-        });
+    const result = await getApiAiResponse({ apiAiRequest, senderID, message, sessionID });
+    return result;
+}
 
-        apiaiRequest.on('error', error => {
-            log.error(error, {
-                module: "botstack:api-ai",
-                senderId: senderId
-            });
-            reject(error);
-        });
-
-        apiaiRequest.end();
-    });
-
-    let result = yield apiaiResponse;
-    return apiaiResponse;
-});
-
-exports.processTextMessage = processTextMessage;
-exports.processEvent = processEvent;
+module.exports = {
+    processTextMessage,
+    processEvent
+};

@@ -261,10 +261,13 @@ class BotStack {
                         if (isEcho) {
                             continue;
                         }
+                        log.debug("New Facebook message", {
+                            message
+                        });
                         let isNewSession = yield sessionStore.checkExists(senderID);
                         const isPostbackMessage = message.postback ? true : false;
                         const isQuickReplyPayload = lodash.get(message, 'message.quick_reply.payload') ? true : false;
-                        const isTextMessage = lodash.get(message, 'message.text') ? true : false;
+                        const isTextMessage = !isQuickReplyPayload && lodash.get(message, 'message.text') ? true : false;
                         const isGeoLocationMessage = lodash.get(message, 'message.attachments[0].payload.coordinates') ? true : false;
                         log.debug("Detect kind of message", {
                             module: "botstack:webhookPost",
