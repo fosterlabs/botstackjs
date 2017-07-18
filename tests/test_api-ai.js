@@ -1,34 +1,28 @@
-require('dotenv').config();
 const rewiremock = require('rewiremock').default;
+const rewire = require('rewire');
+const sinon = require('sinon');
 const assert = require('chai').assert;
 
-const EventEmitter = require('events').EventEmitter;
-
-class EventRequest extends EventEmitter {}
-
-function eventRequest(event, options) {
-    const eventRequestEmitter = new EventRequest();
-    setTimeout(() => {
-        eventRequestEmitter.emit('response', {
-            result: {
-                fulfillment: {
-                    messages: []
-                }
-            }
-        });
-    }, 300);
-}
-
-rewiremock('apiai').with({ eventRequest });
+process.env.APIAI_ACCESS_TOKEN = 'demo_access_token';
+const apiai = rewire('../src/api-ai');
 
 describe('Testing API.AI', () => {
-    beforeEach( () => rewiremock.enable() );
-    it('Test 1', async function () {
-        // process.env.APIAI_ACCESS_TOKEN = 'demo';
-        const api_ai = require('../src/api-ai');
-        let ddd = await api_ai.processEvent('demo', 'test_sender_id');
+    // beforeEach( () => rewiremock.enable() );
+    it('Test processEvent', async function () {
+        const revert = apiai.__set__('getApiAiResponse', async () => {
+            return {
+                result: {
+                    fulfillment: {
+                        messages: []
+                    }
+                }
+            };
+        });
+
+        let ddd = await apiai.processEvent('demo', 'test_sender_id');
         console.log(ddd);
+        revert();
         assert.isTrue(true);
     });
-    afterEach( () => rewiremock.disable() );
+    // afterEach( () => rewiremock.disable() );
 });

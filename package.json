@@ -4,7 +4,8 @@
   "description": "Bot Stack",
   "main": "./index.js",
   "scripts": {
-    "lint": "node_modules/.bin/eslint --fix ."
+    "lint": "node_modules/.bin/eslint --fix .",
+    "test": "node_modules/.bin/_mocha tests"
   },
   "author": {
     "name": "joel",
@@ -27,6 +28,7 @@
     "request": "^2.79.0",
     "request-promise": "^4.1.1",
     "restify": "^4.1.1",
+    "rewire": "^2.5.2",
     "rewiremock": "^1.3.3",
     "sinon": "^2.3.8",
     "uuid": "^3.0.1",
