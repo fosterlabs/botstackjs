@@ -69,7 +69,7 @@ function getApiAiResponse({ apiAiRequest, senderID, eventName, message, sessionI
 
         apiAiRequest.end();
     });
-}
+};
 
 async function processEvent(eventName, senderID) {
     const sessionID = await sessionStore.get(senderID);

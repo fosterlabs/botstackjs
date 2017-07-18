@@ -5,7 +5,8 @@
   "main": "./index.js",
   "scripts": {
     "lint": "node_modules/.bin/eslint --fix .",
-    "test": "node_modules/.bin/_mocha tests"
+    "test": "node_modules/.bin/_mocha tests",
+    "cover": "node_modules/.bin/nyc node_modules/.bin/_mocha tests"
   },
   "author": {
     "name": "joel",
@@ -44,6 +45,7 @@
     "eslint-plugin-import": "^2.2.0",
     "eslint-plugin-jsx-a11y": "^4.0.0",
     "eslint-plugin-react": "^6.9.0",
-    "mocha": "^3.4.2"
+    "mocha": "^3.4.2",
+    "nyc": "^11.0.3"
   }
 }
