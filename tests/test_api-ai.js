@@ -28,15 +28,14 @@ const demoResponse =  {
 
 describe('Testing API.AI', () => {
 
-    it('Test processEvent', async function () {
+    it('Test processEvent using getApiAiResponse', async function () {
         const revert = apiai.__set__('getApiAiResponse', async () => {
             return demoResponse;
         });
 
         const response = await apiai.processEvent('demo', 'test_sender_id');
-        console.log(response);
         revert();
-        assert.isTrue(true);
+        assert.isOk(lodash.get(response, 'result.fulfillment.messages'));
     });
 
     it('Test processEvent with eventRequest', async function () {
