@@ -16,6 +16,7 @@
     "aws-sdk": "^2.5.3",
     "bluebird": "^3.4.7",
     "chai": "^4.1.0",
+    "chai-as-promised": "^7.1.1",
     "dashbot": "^0.7.4",
     "dotenv": "^4.0.0",
     "mongoose": "^4.8.1",
