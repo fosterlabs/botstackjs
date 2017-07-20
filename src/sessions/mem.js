@@ -1,50 +1,37 @@
 const uuid = require('uuid');
-const Promise = require('bluebird');
-const co = Promise.coroutine;
 
 let sessionMap = new Map();
-
 const maxSessionAge_ms = 1000 * 60 * 180;
 
-const set = (senderId) => {
-    return new Promise((resolve, reject) => {
-        let mapObj = {
-            sessionId: uuid.v1(),
-            lastUsed: new Date()
-        };
-        if (sessionMap.has(senderId)) {
-            mapObj = sessionMap.get(senderId);
-            mapObj.lastUsed = new Date();
-        }
-        sessionMap.set(senderId, mapObj);
-        resolve();
-    });
-};
-
-const get = co(function* (senderId, autoCreate) {
-    autoCreate = typeof(autoCreate) !== 'undefined' ? autoCreate: false;
-    let item = sessionMap.get(senderId);
-    if (!item && autoCreate) {
-        item = yield set(senderId);
+async function set(senderID) {
+    let mapObj = {
+        sessionId: uuid.v1(),
+        lastUsed: new Date()
+    };
+    if (sessionMap.has(senderID)) {
+        mapObj = sessionMap.get(senderID);
+        mapObj.lastUsed = new Date();
     }
-    return item ? item.sessionId : null;
-});
+    sessionMap.set(senderID, mapObj);
+    return mapObj;
+}
 
-let checkExists = co(function* (senderId) {
-    let item = yield get(senderId);
+async function get(senderID, autoCreate = null) {
+    let item = sessionMap.get(senderID);
+    if (!item && autoCreate) {
+        item = await set(senderID);
+    }
+    return item ? item : null;
+}
+
+async function checkExists(senderID) {
+    let item = await get(senderID);
     if (item) {
         return true;
     } else {
         return false;
     }
-});
-
-function printSessions() {
-    sessionMap.forEach((item, key) => {
-        console.log('SenderID:' + key + ' SessionId:' + item.sessionId + ' Last Used:' + item.lastUsed);
-    });
-};
-
+}
 
 function clearOldSessions() {
     let now = new Date();
@@ -54,10 +41,8 @@ function clearOldSessions() {
             map.delete(key);
         }
     });
-    console.log('Session Size ' + sessionMap.size + ' items. Removed ' + (sessionSize - sessionMap.size) + ' items');
+    // console.log('Session Size ' + sessionMap.size + ' items. Removed ' + (sessionSize - sessionMap.size) + ' items');
 };
 
-//run frequently to remove sessions
 setInterval(clearOldSessions, maxSessionAge_ms);
-
-module.exports = { set, get, printSessions, checkExists };
+module.exports = { set, get, checkExists };
