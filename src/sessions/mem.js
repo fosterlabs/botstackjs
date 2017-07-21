@@ -5,7 +5,7 @@ const maxSessionAge_ms = 1000 * 60 * 180;
 
 async function set(senderID) {
     let mapObj = {
-        sessionId: uuid.v1(),
+        sessionID: uuid.v1(),
         lastUsed: new Date()
     };
     if (sessionMap.has(senderID)) {
@@ -16,7 +16,7 @@ async function set(senderID) {
     return mapObj;
 }
 
-async function get(senderID, autoCreate = null) {
+async function get(senderID, autoCreate = true) {
     let item = sessionMap.get(senderID);
     if (!item && autoCreate) {
         item = await set(senderID);

@@ -61,7 +61,7 @@ async function set(senderID, sessionAge_sec = 60 * 180) {
     */
 }
 
-async function get(senderID, autoCreate = false) {
+async function get(senderID, autoCreate = true) {
     const sessionKey = `${KEY_SESSIONS}:${senderID}`;
     const sessionExists = await client.keysAsync(sessionKey);
     if (sessionExists.length === 0) {

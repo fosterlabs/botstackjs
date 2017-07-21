@@ -9,6 +9,7 @@ const fb = require("./fb");
 const botmetrics = require('./bot-metrics.js');
 const apiai = require('./api-ai.js');
 const log = require('./log.js');
+const smooch = require('./smooch');
 
 process.on('unhandledRejection', (reason, p) => {
     // console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
@@ -28,7 +29,7 @@ let conf = {};
 const envVars = [
     { name: "FB_PAGE_ACCESS_TOKEN", required: true, module: ["fb"] },
     { name: "FB_VERIFY_TOKEN", required: true, module: ["fb"] },
-    { name: "APIAI_ACCESS_TOKEN", required: true, module: ["fb"] },
+    { name: "APIAI_ACCESS_TOKEN", required: true, module: ["api-ai"] },
     { name: "AWS_ACCESS_KEY", required: false, module: ["s3"] },
     { name: "AWS_SECRET_KEY", required: false, module: ["s3"] },
     { name: "BUCKET_NAME", required: false, module: ["s3"] },
@@ -36,7 +37,10 @@ const envVars = [
     { name: "BOTMETRICS_TOKEN", required: false, module: ["botmetrics"] },
     { name: "DASHBOT_API_KEY", required: false, module: ["dashbot"] },
     { name: "MONGODB_URI", required: false, module: ["db"] },
-    { name: "REDIS_URL", required: false, module: ["session"] }
+    { name: "REDIS_URL", required: false, module: ["session"] },
+    { name: "SMOOCH_KEY_ID", required: false, module: ["smooch"] },
+    { name: "SMOOCH_SECRET", required: false, module: ["smooch"] },
+    { name: "SMOOCH_SCOPE", required: false, module: ["smooch"] }
 ];
 let enabledModules = [];
 
@@ -66,9 +70,32 @@ function checkEnvs() {
     let notFoundEnvs = [];
     for (const e of checkVars) {
         if (!(e in process.env)) {
+            console.log(e);
             notFoundEnvs.push(e);
         }
     }
+
+    // ???
+    // const preNotFoundEnvs = lodash.cloneDeep(notFoundEnvs);
+    /*
+    const preNotFoundEnvs = lodash.filter(notFoundEnvs, (x) => {
+        const fbMissed = lodash.includes(lodash.get(lodash.find(envVars, { name: x }), 'module'), 'fb');
+        const smoochKeys = lodash.map(lodash.filter(envVars, { module: ['smooch'] }), 'name');
+        const smoochExists = lodash.intersection(smoochKeys, Object.keys(process.env));
+        console.log('fbMissed: '); console.log(fbMissed);
+        console.log('Smooch exists:'); console.log(smoochExists);
+
+        if ((fbMissed) && (smoochKeys.length === smoochExists.length)) {
+            console.log('FB replaced by SMOOCH');
+            return false;
+        } else {
+            return true;
+        }
+    });
+    notFoundEnvs = lodash.cloneDeep(preNotFoundEnvs);
+    //
+    */
+
     if (notFoundEnvs.length > 0) {
         throw new Error("Not found env variables: " + notFoundEnvs.join(","));
     }
@@ -163,6 +190,8 @@ class BotStack {
 
         this.server.post('/webhook/', this._webhookPost(this));
 
+        this.server.post('/smooch/webhook/', this._smoochWebhook(this));
+
         this.server.post('/apiaidb/', (req, res, next) => {
             res.json({
                 speech: req.body.result.fulfillment.speech,
@@ -246,6 +275,27 @@ class BotStack {
             }
         })();
     };
+
+    _smoochWebhook(context) {
+        console.log('!!!');
+        const self = context;
+        return function(req, res, next) {
+            console.log('???');
+            co(function* (){
+                res.end();
+                for (const msg of lodash.get(req.body, 'messages')) {
+                    const text = lodash.get(msg, 'text');
+                    const authorID = lodash.get(msg, 'authorId');
+                    let apiAiResponse = yield self.apiai.processTextMessage(text, authorID);
+                    //console.log(apiAiResponse);
+                    const textResponse = lodash.get(apiAiResponse, 'response.result.fulfillment.speech');
+                    //console.log(textResponse);
+                    const result = yield smooch.sendMessage(textResponse, authorID);
+                    console.log(result);
+                }
+            })();
+        };
+    }
 
     _webhookPost(context) {
         let self = context;

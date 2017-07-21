@@ -92,7 +92,8 @@ async function processEvent(eventName, senderID) {
 }
 
 async function processTextMessage(message, senderID) {
-    const sessionID = await sessionStore.get(senderID);
+    const sessionResult = await sessionStore.get(senderID);
+    const sessionID = sessionResult.sessionID;
 
     log.debug("Process text message", {
         module: "botstack:api-ai",
