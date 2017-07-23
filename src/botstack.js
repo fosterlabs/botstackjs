@@ -277,23 +277,29 @@ class BotStack {
     };
 
     _smoochWebhook(context) {
-        console.log('!!!');
+        log.debug('Smooch API endpoint ready', {
+            module: 'botstack:smoochWebhook'
+        });
         const self = context;
         return function(req, res, next) {
-            console.log('???');
             co(function* (){
                 res.end();
-                for (const msg of lodash.get(req.body, 'messages')) {
+                for (const msg of lodash.get(req.body, 'messages', [])) {
+                    // message schema
+                    // https://docs.smooch.io/rest/?javascript#schema44
+                    if (msg.role !== 'appUser') {
+                        continue;
+                    }
+                    log.debug('New message from Smooch endpoint', {
+                        module: 'botstack:smoochWebhook',
+                        message: msg
+                    });
                     const text = lodash.get(msg, 'text');
                     const authorID = lodash.get(msg, 'authorId');
-                    let apiAiResponse = yield self.apiai.processTextMessage(text, authorID);
-                    //console.log(apiAiResponse);
-                    const textResponse = lodash.get(apiAiResponse, 'response.result.fulfillment.speech');
-                    //console.log(textResponse);
-                    const result = yield smooch.sendMessage(textResponse, authorID);
-                    console.log(result);
+                    const apiAiResponse = yield self.apiai.processTextMessage(text, authorID);
+                    const result = yield smooch.processMessagesFromApiAi(apiAiResponse, authorID);
                 }
-            })();
+            })().catch(err => console.log(err));
         };
     }
 
