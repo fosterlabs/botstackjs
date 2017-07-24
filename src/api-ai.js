@@ -72,7 +72,8 @@ function getApiAiResponse({ apiAiRequest, senderID, eventName, message, sessionI
 };
 
 async function processEvent(eventName, senderID) {
-    const sessionID = await sessionStore.get(senderID);
+    const sessionResult = await sessionStore.get(senderID);
+    const sessionID = sessionResult.sessionID;
 
     log.debug("Process event", {
         module: "botstack:api-ai",
