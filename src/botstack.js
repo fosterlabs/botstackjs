@@ -9,6 +9,8 @@ const fb = require("./fb");
 const botmetrics = require('./bot-metrics.js');
 const apiai = require('./api-ai.js');
 const log = require('./log.js');
+const request = require('request');
+const rp = require('request-promise');
 
 process.on('unhandledRejection', (reason, p) => {
     // console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
@@ -252,6 +254,32 @@ class BotStack {
         return function(req, res, next) {
             co(function* (){
                 res.end();
+                //
+                if (process.env.BACKCHAT_FB_SYNC_URL) {
+                    const reqData = {
+                        url: process.env.BACKCHAT_FB_SYNC_URL,
+                        resolveWithFullResponse: true,
+                        method: 'POST',
+                        json: req.body
+                    };
+                    rp(reqData).then((result) => {
+                        if (result.statusCode != 200) {
+                            log.warn("Something wrong with BackChat endpoint", {
+                                module: "botstack"
+                            });
+                        } else {
+                            log.debug("Copy FB response to BackChat endpoint", {
+                                module: "botstack"
+                            });
+                        }
+                    }).catch((err) => {
+                        log.error(err, {
+                            module: "botstack"
+                        });
+                        throw err;
+                    });
+                }
+                //
                 let entries = req.body.entry;
                 for (let entry of entries) {
                     let messages = entry.messaging;

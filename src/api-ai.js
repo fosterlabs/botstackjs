@@ -55,19 +55,22 @@ let processEvent = co(function* (eventName, senderId) {
                     method: 'POST',
                     json: response
                 };
-                try {
-                    let response = yield rp(reqData);
-                    if (response.statusCode != 200) {
+                rp(reqData).then((result) => {
+                    if (result.statusCode != 200) {
                         log.warn("Something wrong with BackChat endpoint", {
                             module: "botstack:api-ai"
                         });
+                    } else {
+                        log.debug("Copy API.AI response to BackChat endpoint", {
+                            module: "botstack:api-ai"
+                        });
                     }
-                } catch (e) {
-                    log.error(e, {
+                }).catch((err) => {
+                    log.error(err, {
                         module: "botstack:api-ai"
                     });
-                    throw e;
-                }
+                    throw err;
+                });
             }
             if (isDefined(response.result)) {
                 log.debug("API.AI result", {
@@ -132,6 +135,33 @@ let processTextMessage = co(function* (message, senderId) {
                 message: message,
                 response: response
             });
+            if (process.env.BACKCHAT_APIAI_SYNC_URL) {
+                const reqData = {
+                    url: process.env.BACKCHAT_APIAI_SYNC_URL,
+                    resolveWithFullResponse: true,
+                    method: 'POST',
+                    json: {
+                        sender_id: senderId,
+                        response
+                    }
+                };
+                rp(reqData).then((result) => {
+                    if (result.statusCode != 200) {
+                        log.warn("Something wrong with BackChat endpoint", {
+                            module: "botstack:api-ai"
+                        });
+                    } else {
+                        log.debug("Copy API.AI response to BackChat endpoint", {
+                            module: "botstack:api-ai"
+                        });
+                    }
+                }).catch((err) => {
+                    log.error(err, {
+                        module: "botstack:api-ai"
+                    });
+                    throw err;
+                });
+            }
             if (isDefined(response.result)) {
                 let responseText = response.result.fulfillment.speech;
                 let responseData = response.result.fulfillment.data;
