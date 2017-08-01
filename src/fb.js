@@ -7,7 +7,7 @@ const co = Promise.coroutine;
 const log = require("./log.js");
 const Q = require('q');
 
-let processMessagesFromApiAi = co(function* (apiaiResponse, senderID) {
+let processMessagesFromApiAi = co(function* (apiaiResponse, senderID, dontSend = false) {
     if (!'messages' in apiaiResponse) {
         log.debug("Response from API.AI not contains messages", {
             module: "botstack:fb",
@@ -15,6 +15,7 @@ let processMessagesFromApiAi = co(function* (apiaiResponse, senderID) {
         });
         return;
     }
+    let allMessages = [];
     for (let message of apiaiResponse.messages) {
         let replyMessage = null;
         log.debug("Process message from API.AI", {
@@ -42,7 +43,14 @@ let processMessagesFromApiAi = co(function* (apiaiResponse, senderID) {
                 log.error("Unknown message type", { module: "botstack:fb "});
                 break;
         };
-        yield reply(replyMessage, senderID);
+        if (dontSend) {
+            allMessages.push(replyMessage);
+        } else {
+            yield reply(replyMessage, senderID);
+        }
+    }
+    if (dontSend) {
+        return allMessages;
     }
 });
 
