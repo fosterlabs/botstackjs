@@ -1,5 +1,7 @@
 const lodash = require('lodash');
 const apiai = require('apiai');
+const request = require('request');
+const rp = require('request-promise');
 
 const sessionStore = require('./session.js')();
 const log = require('./log.js');
@@ -7,6 +9,30 @@ const log = require('./log.js');
 const APIAI_ACCESS_TOKEN = process.env.APIAI_ACCESS_TOKEN;
 const APIAI_LANG = "en";
 const apiAiService = apiai(APIAI_ACCESS_TOKEN);
+
+async function backchatApiAiSync(response) {
+    if (process.env.BACKCHAT_APIAI_SYNC_URL) {
+        const reqData = {
+            url: process.env.BACKCHAT_APIAI_SYNC_URL,
+            resolveWithFullResponse: true,
+            method: 'POST',
+            json: response
+        };
+        try {
+            const result = await rp(reqData);
+            if (result.statusCode != 200) {
+                log.warn('Something wrong with BackChat endpoint', {
+                    module: 'botstack:api-ai'
+                });
+            }
+        } catch (e) {
+            log.error(e, {
+                module: 'botstack:api-ai'
+            });
+            throw e;
+        }
+    }
+}
 
 function getApiAiResponse({ apiAiRequest, senderID, eventName, message, sessionID } = {
     eventName: null, message: null
@@ -29,6 +55,8 @@ function getApiAiResponse({ apiAiRequest, senderID, eventName, message, sessionI
             }
 
             log.debug("API.AI responded", logParams);
+
+            backchatApiAiSync(response);
 
             if (lodash.get(response, 'result')) {
                 log.debug("API.AI result", {
