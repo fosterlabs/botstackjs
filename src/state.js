@@ -1,7 +1,7 @@
 module.exports = () => {
-    if (process.env.REDIS_URL) {
-        throw new Error("Not implemented");
-    } else {
-        return require('./states/mem.js');
-    }
+  if (process.env.REDIS_URL) {
+    throw new Error('Not implemented');
+  } else {
+    return require('./states/mem.js');
+  }
 };

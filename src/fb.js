@@ -1,156 +1,155 @@
-﻿//const dashbot = require('dashbot')(process.env.DASHBOT_API_KEY).facebook;
+// const dashbot = require('dashbot')(process.env.DASHBOT_API_KEY).facebook;
 const dashbot = require('./dashbot')('facebook');
 const request = require('request');
 const rp = require('request-promise');
 const Promise = require('bluebird');
+
 const co = Promise.coroutine;
-const log = require("./log.js");
+const log = require('./log.js');
 const Q = require('q');
 const utils = require('./utils');
 
 async function reply(message, senderId) {
-    if (message == null) {
-        log.debug("This message ignored to send", {
-            module: "botstack:fb",
-            senderId: senderId,
-            message: message
-        });
-        return null;
-    }
-    log.debug("Sending message", {
-        module: "botstack:fb",
-        senderId: senderId,
-        message: message
+  if (message == null) {
+    log.debug('This message ignored to send', {
+      module: 'botstack:fb',
+      senderId,
+      message
     });
-    const reqData = {
-        url: 'https://graph.facebook.com/v2.9/me/messages',
-        qs: {
-            access_token: process.env.FB_PAGE_ACCESS_TOKEN
-        },
-        method: 'POST',
-        json: {
-            recipient: {
-                id: senderId
-            },
-            message
-        },
-        resolveWithFullResponse: true
-    };
-    const res = await rp(reqData);
-    return res;
+    return null;
+  }
+  log.debug('Sending message', {
+    module: 'botstack:fb',
+    senderId,
+    message
+  });
+  const reqData = {
+    url: 'https://graph.facebook.com/v2.9/me/messages',
+    qs: {
+      access_token: process.env.FB_PAGE_ACCESS_TOKEN
+    },
+    method: 'POST',
+    json: {
+      recipient: {
+        id: senderId
+      },
+      message
+    },
+    resolveWithFullResponse: true
+  };
+  const res = await rp(reqData);
+  return res;
 }
 
 async function processMessagesFromApiAi(apiaiResponse, senderID, dontSend = false) {
-    let allMessages = [];
+  const allMessages = [];
 
-    if (!'messages' in apiaiResponse) {
-        log.debug("Response from API.AI not contains messages", {
-            module: "botstack:fb",
-            response: apiaiResponse
-        });
-        return allMessages;
-    }
-
-    for (const message of apiaiResponse.messages) {
-        let replyMessage = null;
-        log.debug("Process message from API.AI", {
-            module: "botstack:fb",
-            message: message,
-            messageType: message.type
-        });
-        switch (message.type) {
-        case 0:
-            replyMessage = textMessage(message.speech);
-            break;
-        case 1:
-            replyMessage = structuredMessage(message);
-            break;
-        case 2:
-            replyMessage = quickReply(message);
-            break;
-        case 3:
-            replyMessage = imageReply(message);
-            break;
-        case 4:
-            replyMessage = customMessageReply(message);
-            break;
-        default:
-            log.error("Unknown message type", { module: "botstack:fb "});
-            break;
-        };
-        if (dontSend) {
-            allMessages.push(replyMessage);
-        } else {
-            await reply(replyMessage, senderID);
-        }
-    }
+  if (!('messages' in apiaiResponse)) {
+    log.debug('Response from API.AI not contains messages', {
+      module: 'botstack:fb',
+      response: apiaiResponse
+    });
     return allMessages;
+  }
+
+  for (const message of apiaiResponse.messages) {
+    let replyMessage = null;
+    log.debug('Process message from API.AI', {
+      module: 'botstack:fb',
+      message,
+      messageType: message.type
+    });
+    switch (message.type) {
+      case 0:
+        replyMessage = textMessage(message.speech);
+        break;
+      case 1:
+        replyMessage = structuredMessage(message);
+        break;
+      case 2:
+        replyMessage = quickReply(message);
+        break;
+      case 3:
+        replyMessage = imageReply(message);
+        break;
+      case 4:
+        replyMessage = customMessageReply(message);
+        break;
+      default:
+        log.error('Unknown message type', { module: 'botstack:fb ' });
+        break;
+    }
+    if (dontSend) {
+      allMessages.push(replyMessage);
+    } else {
+      await reply(replyMessage, senderID);
+    }
+  }
+  return allMessages;
 }
 
 function structuredMessage(message) {
-    let buttons = [];
-    for (const button of message.buttons) {
-        if ('postback' in button) {
+  const buttons = [];
+  for (const button of message.buttons) {
+    if ('postback' in button) {
             // fix API.AI bug:
             // https://discuss.api.ai/t/bug-in-facebook-cards-with-url-buttons/7276
-            if (utils.checkValidURL(button.postback)) {
-                buttons.push({
-                    "type": "web_url",
-                    "title": button.text,
-                    "payload": button.postback
-                });
-            } else {
-                buttons.push({
-                    "type": "postback",
-                    "title": button.text,
-                    "payload": button.postback
-                });
-            }
+      if (utils.checkValidURL(button.postback)) {
+        buttons.push({
+          type: 'web_url',
+          title: button.text,
+          payload: button.postback
+        });
+      } else {
+        buttons.push({
+          type: 'postback',
+          title: button.text,
+          payload: button.postback
+        });
+      }
             //
-        } else if ('url' in button) {
-            buttons.push({
-                "type": "web_url",
-                "title": button.text,
-                "url": button.url
-            });
-        }
-
+    } else if ('url' in button) {
+      buttons.push({
+        type: 'web_url',
+        title: button.text,
+        url: button.url
+      });
     }
+  }
 
-    const element = {
-        "title": message.title,
-        "subtitle": message.subtitle,
-        "image_url": message.imageUrl
-    };
+  const element = {
+    title: message.title,
+    subtitle: message.subtitle,
+    image_url: message.imageUrl
+  };
 
-    if (buttons.length > 0) {
-        element["buttons"] = buttons;
+  if (buttons.length > 0) {
+    element.buttons = buttons;
+  }
+
+  return {
+    attachment: {
+      type: 'template',
+      payload: {
+        template_type: 'generic',
+        elements: [element]
+      }
     }
-
-    return {
-        "attachment": {
-            "type": "template",
-            "payload": {
-                "template_type": "generic",
-                "elements": [ element ]
-            }
-        }
-    };
-};
+  };
+}
 
 //--------------------------------------------------------------------------------
 function textMessage(message) {
-    if (message == "") {
-        return null;
-    } else {
-        return {
-            "text": message
-        };
-    }
+  if (message == '') {
+    return null;
+  }
+  return {
+    text: message
+  };
 }
 
-//pass into this method the `messages` section of the api.ai response
-//message: {
+// pass into this method the `messages` section of the api.ai response
+// message: {
 //  title: 'Yes',
 //  replies" [
 //   "No", "Maybe"
@@ -158,147 +157,146 @@ function textMessage(message) {
 //  type: 2
 // }
 function quickReply(apiai_qr) {
-    let quick_replies = [];
+  const quick_replies = [];
 
-    for (let repl of apiai_qr.replies) {
-        quick_replies.push({
-            "content_type": "text",
-            "title": repl,
-            "payload": repl
-        });
-    }
+  for (const repl of apiai_qr.replies) {
+    quick_replies.push({
+      content_type: 'text',
+      title: repl,
+      payload: repl
+    });
+  }
 
-    return {
-        "text": apiai_qr.title,
-        "quick_replies": quick_replies
-    };
+  return {
+    text: apiai_qr.title,
+    quick_replies
+  };
 }
 
 function imageReply(message) {
-    return {
-        attachment: {
-            type: "image",
-            payload: {
-                url: message.imageUrl || message.url
-            }
-        }
-    };
-};
+  return {
+    attachment: {
+      type: 'image',
+      payload: {
+        url: message.imageUrl || message.url
+      }
+    }
+  };
+}
 
 function videoReply(message) {
-    return {
-        attachment: {
-            type: "video",
-            payload: {
-                url: message.url
-            }
-        }
-    };
+  return {
+    attachment: {
+      type: 'video',
+      payload: {
+        url: message.url
+      }
+    }
+  };
 }
 
 function audioReply(message) {
-    return {
-        attachment: {
-            type: "audio",
-            payload: {
-                url: message.url
-            }
-        }
-    };
+  return {
+    attachment: {
+      type: 'audio',
+      payload: {
+        url: message.url
+      }
+    }
+  };
 }
 
 function fileReply(message) {
-    return {
-        attachment: {
-            type: "file",
-            payload: {
-                url: message.url
-            }
-        }
-    };
+  return {
+    attachment: {
+      type: 'file',
+      payload: {
+        url: message.url
+      }
+    }
+  };
 }
 
 function customMessageReply(message) {
-    if ('payload' in message) {
-        if ('facebook' in message.payload) {
-            if ('attachment' in message.payload.facebook) {
-                switch (message.payload.facebook.attachment.type) {
-                    case "video":
-                        return videoReply(message.payload.facebook.attachment.payload);
-                        break;
-                    case "audio":
-                        return audioReply(message.payload.facebook.attachment.payload);
-                        break;
-                    case "file":
-                        return fileReply(message.payload.facebook.attachment.payload);
-                        break;
-                    case "image":
-                        return imageReply(message.payload.facebook.attachment.payload);
-                        break;
-                }
-            }
+  if ('payload' in message) {
+    if ('facebook' in message.payload) {
+      if ('attachment' in message.payload.facebook) {
+        switch (message.payload.facebook.attachment.type) {
+          case 'video':
+            return videoReply(message.payload.facebook.attachment.payload);
+            break;
+          case 'audio':
+            return audioReply(message.payload.facebook.attachment.payload);
+            break;
+          case 'file':
+            return fileReply(message.payload.facebook.attachment.payload);
+            break;
+          case 'image':
+            return imageReply(message.payload.facebook.attachment.payload);
+            break;
         }
+      }
     }
-};
+  }
+}
 
-let setThreadSettings = co(function* (data, method) {
-    method = typeof(method) !== 'undefined' ? method: "POST";
-    let reqData = {
-        url: "https://graph.facebook.com/v2.9/me/thread_settings",
-        qs: {
-            access_token: process.env.FB_PAGE_ACCESS_TOKEN
-        },
-        resolveWithFullResponse: true,
-        method: method,
-        json: data
-    };
-    try {
-        let response = yield rp(reqData);
-        if (response.statusCode == 200) {
-            log.debug("Sent settings to Facebook", {
-                module: "botstack:fb"
-            });
-            return response.body;
-        } else {
-            log.error("Error in Facebook response", {
-                module: "botstack:fb", response: response.body
-            });
-            throw new Error("Error in Facebook response: " + response.body);
-        }
-    } catch (e) {
-        log.error(e, {
-            module: "botstack:fb"
-        });
-        throw e;
+const setThreadSettings = co(function* (data, method) {
+  method = typeof (method) !== 'undefined' ? method : 'POST';
+  const reqData = {
+    url: 'https://graph.facebook.com/v2.9/me/thread_settings',
+    qs: {
+      access_token: process.env.FB_PAGE_ACCESS_TOKEN
+    },
+    resolveWithFullResponse: true,
+    method,
+    json: data
+  };
+  try {
+    const response = yield rp(reqData);
+    if (response.statusCode == 200) {
+      log.debug('Sent settings to Facebook', {
+        module: 'botstack:fb'
+      });
+      return response.body;
     }
+    log.error('Error in Facebook response', {
+      module: 'botstack:fb', response: response.body
+    });
+    throw new Error(`Error in Facebook response: ${response.body}`);
+  } catch (e) {
+    log.error(e, {
+      module: 'botstack:fb'
+    });
+    throw e;
+  }
 });
 
 function greetingText(text) {
-    log.debug("Sending greeting text", {
-        module: "botstack:fb"
-    });
-    let data = {
-        setting_type: "greeting",
-        greeting: {
-            text: text
-        }
-    };
-    return setThreadSettings(data);
+  log.debug('Sending greeting text', {
+    module: 'botstack:fb'
+  });
+  const data = {
+    setting_type: 'greeting',
+    greeting: {
+      text
+    }
+  };
+  return setThreadSettings(data);
 }
 
 function getStartedButton(payload) {
-    payload = typeof(payload) !== 'undefined' ? payload: "Get Started";
-    log.debug("Sending started button", {
-        module: "botstack:fb"
-    });
-    let data = {
-        setting_type: "call_to_actions",
-        thread_state: "new_thread",
-        call_to_actions: [
-            { payload: payload }
-        ]
-    };
-    return setThreadSettings(data);
+  payload = typeof (payload) !== 'undefined' ? payload : 'Get Started';
+  log.debug('Sending started button', {
+    module: 'botstack:fb'
+  });
+  const data = {
+    setting_type: 'call_to_actions',
+    thread_state: 'new_thread',
+    call_to_actions: [
+            { payload }
+    ]
+  };
+  return setThreadSettings(data);
 }
 
 /*
@@ -306,126 +304,126 @@ function getStartedButton(payload) {
  { type: "postback", title: "Help", payload: "Help" }]
 */
 function persistentMenu(call_to_actions) {
-    log.debug("Sending persistent menu settings", {
-        module: "botstack:fb"
-    });
-    let data = {
-        setting_type: "call_to_actions",
-        thread_state: "existing_thread",
-        call_to_actions: call_to_actions
-    };
-    return setThreadSettings(data);
+  log.debug('Sending persistent menu settings', {
+    module: 'botstack:fb'
+  });
+  const data = {
+    setting_type: 'call_to_actions',
+    thread_state: 'existing_thread',
+    call_to_actions
+  };
+  return setThreadSettings(data);
 }
 
 function deletePersistentMenu() {
-    log.debug("Delete persistent menu settings", {
-        module: "botstack:fb"
-    });
-    let data = {
-        setting_type: "call_to_actions",
-        thread_state: "existing_thread"
-    };
-    return setThreadSettings(data, "DELETE");
+  log.debug('Delete persistent menu settings', {
+    module: 'botstack:fb'
+  });
+  const data = {
+    setting_type: 'call_to_actions',
+    thread_state: 'existing_thread'
+  };
+  return setThreadSettings(data, 'DELETE');
 }
 
 
 function imageCard(thumbUrl, downloadUrl, instaUrl, authName) {
-    return {
-        "attachment": {
-            "type": "template",
-            "payload": {
-                "template_type": "generic",
-                "elements": [
-                    {
-                        "title": authName + " on Instagram",
-                        "item_url": instaUrl,
-                        "image_url": thumbUrl,
-                        "buttons": [
-                            {
-                                "type": "web_url",
-                                "url": downloadUrl,
-                                "title": "Download"
-                            },
-                            {
-                                "type": "element_share"
-                            }
-                        ]
-                    }]
-            }
-        }
-    };
+  return {
+    attachment: {
+      type: 'template',
+      payload: {
+        template_type: 'generic',
+        elements: [
+          {
+            title: `${authName} on Instagram`,
+            item_url: instaUrl,
+            image_url: thumbUrl,
+            buttons: [
+              {
+                type: 'web_url',
+                url: downloadUrl,
+                title: 'Download'
+              },
+              {
+                type: 'element_share'
+              }
+            ]
+          }]
+      }
+    }
+  };
 }
 
 function youtubeVideoCard(thumbUrl, downloadUrl, originalUrl) {
-    return {
-        "attachment": {
-            "type": "template",
-            "payload": {
-                "template_type": "generic",
-                "elements": [
-                    {
-                        "title": "Youtube Video",
-                        "item_url": originalUrl,
-                        "image_url": thumbUrl,
-                        "buttons": [
-                            {
-                                "type": "web_url",
-                                "url": downloadUrl,
-                                "title": "Download"
-                            },
-                            {
-                                "type": "element_share"
-                            }
-                        ]
-                    }]
-            }
-        }
-    };
+  return {
+    attachment: {
+      type: 'template',
+      payload: {
+        template_type: 'generic',
+        elements: [
+          {
+            title: 'Youtube Video',
+            item_url: originalUrl,
+            image_url: thumbUrl,
+            buttons: [
+              {
+                type: 'web_url',
+                url: downloadUrl,
+                title: 'Download'
+              },
+              {
+                type: 'element_share'
+              }
+            ]
+          }]
+      }
+    }
+  };
 }
 
 function imageAttachment(thumbUrl) {
-    return {
-        "attachment": {
-            "type": "image",
-            "payload": {
-                "url": thumbUrl
-            }
-        }
-    };
+  return {
+    attachment: {
+      type: 'image',
+      payload: {
+        url: thumbUrl
+      }
+    }
+  };
 }
 
 function genericMessage() {
-    return {
-        "attachment": {
-            "type": "template",
-            "payload": {
-                "template_type": "generic",
-                "elements": [{
-                    "title": "First card",
-                    "subtitle": "Element #1 of an hscroll",
-                    "image_url": "http://messengerdemo.parseapp.com/img/rift.png",
-                    "buttons": [{
-                        "type": "web_url",
-                        "url": "https://www.messenger.com",
-                        "title": "web url"
-                    }, {
-                        "type": "postback",
-                        "title": "Postback",
-                        "payload": "Payload for first element in a generic bubble"
-                    }]
-                }, {
-                    "title": "Second card",
-                    "subtitle": "Element #2 of an hscroll",
-                    "image_url": "http://messengerdemo.parseapp.com/img/gearvr.png",
-                    "buttons": [{
-                        "type": "postback",
-                        "title": "Postback",
-                        "payload": "Payload for second element in a generic bubble"
-                    }]
-                }]
-            }
-        }
-    };
+  return {
+    attachment: {
+      type: 'template',
+      payload: {
+        template_type: 'generic',
+        elements: [{
+          title: 'First card',
+          subtitle: 'Element #1 of an hscroll',
+          image_url: 'http://messengerdemo.parseapp.com/img/rift.png',
+          buttons: [{
+            type: 'web_url',
+            url: 'https://www.messenger.com',
+            title: 'web url'
+          }, {
+            type: 'postback',
+            title: 'Postback',
+            payload: 'Payload for first element in a generic bubble'
+          }]
+        }, {
+          title: 'Second card',
+          subtitle: 'Element #2 of an hscroll',
+          image_url: 'http://messengerdemo.parseapp.com/img/gearvr.png',
+          buttons: [{
+            type: 'postback',
+            title: 'Postback',
+            payload: 'Payload for second element in a generic bubble'
+          }]
+        }]
+      }
+    }
+  };
 }
 
 const typing = co(function* (userID, isOn = false) {
@@ -434,171 +432,171 @@ const typing = co(function* (userID, isOn = false) {
     // typing_off - turn typing indicators off
     // Typing indicators are automatically turned off after 20 seconds
 
-    const action = isOn ? "typing_on": "typing_off";
-    const msg = {
-        recipient: {
-            id: userID
-        },
-        sender_action: action
-    };
-    const reqData = {
-        url: "https://graph.facebook.com/v2.9/me/messages",
-        qs: {
-            access_token: process.env.FB_PAGE_ACCESS_TOKEN
-        },
-        resolveWithFullResponse: true,
-        method: "POST",
-        json: msg
-    };
-    try {
-        const resp = yield rp(reqData);
-        if (resp.statusCode == 200) {
-            log.debug("Sent typing to Facebook", {
-                module: "fb",
-                recipientId: userID
-            });
-            return true;
-        } else {
-            log.error("Sent settings to Facebook", {
-                module: "fb",
-                recipientId: userID
-            });
-            return false;
-        }
-        return true;
-    } catch (e) {
-        log.error(e, {
-            module: "fb"
-        });
-        throw e;
+  const action = isOn ? 'typing_on' : 'typing_off';
+  const msg = {
+    recipient: {
+      id: userID
+    },
+    sender_action: action
+  };
+  const reqData = {
+    url: 'https://graph.facebook.com/v2.9/me/messages',
+    qs: {
+      access_token: process.env.FB_PAGE_ACCESS_TOKEN
+    },
+    resolveWithFullResponse: true,
+    method: 'POST',
+    json: msg
+  };
+  try {
+    const resp = yield rp(reqData);
+    if (resp.statusCode == 200) {
+      log.debug('Sent typing to Facebook', {
+        module: 'fb',
+        recipientId: userID
+      });
+      return true;
     }
+    log.error('Sent settings to Facebook', {
+      module: 'fb',
+      recipientId: userID
+    });
+    return false;
+
+    return true;
+  } catch (e) {
+    log.error(e, {
+      module: 'fb'
+    });
+    throw e;
+  }
 });
 
-const attachmentUpload = co(function* (attachmentURL, attachmentType = "video") {
-    const msg = {
-        message: {
-            attachment: {
-                type: attachmentType,
-                payload: {
-                    url: attachmentURL,
-                    is_reusable: true
-                }
-            }
+const attachmentUpload = co(function* (attachmentURL, attachmentType = 'video') {
+  const msg = {
+    message: {
+      attachment: {
+        type: attachmentType,
+        payload: {
+          url: attachmentURL,
+          is_reusable: true
         }
-    };
-    const reqData = {
-        url: "https://graph.facebook.com/v2.9/me/message_attachments",
-        qs: {
-            access_token: process.env.FB_PAGE_ACCESS_TOKEN
-        },
-        resolveWithFullResponse: true,
-        method: "POST",
-        json: msg
-    };
-    try {
-        const resp = yield rp(reqData);
-        if (resp.statusCode == 200) {
-            log.debug("Upload file to Facebook", {
-                module: "fb",
-                url: attachmentURL
-            });
-            return resp.body;
-        } else if (resp.statusCode == 400) {
-            log.error("Upload file to Facebook", {
-                module: "fb",
-                url: attachmentURL,
-                error: resp.error
-            });
-        } else {
-            log.error("Upload file to Facebook", {
-                module: "fb",
-                url: attachmentURL,
-                response: resp.body
-            });
-            return false;
-        }
-        return true;
-    } catch (e) {
-        log.error(e, {
-            module: "fb"
-        });
-        throw e;
+      }
     }
+  };
+  const reqData = {
+    url: 'https://graph.facebook.com/v2.9/me/message_attachments',
+    qs: {
+      access_token: process.env.FB_PAGE_ACCESS_TOKEN
+    },
+    resolveWithFullResponse: true,
+    method: 'POST',
+    json: msg
+  };
+  try {
+    const resp = yield rp(reqData);
+    if (resp.statusCode == 200) {
+      log.debug('Upload file to Facebook', {
+        module: 'fb',
+        url: attachmentURL
+      });
+      return resp.body;
+    } else if (resp.statusCode == 400) {
+      log.error('Upload file to Facebook', {
+        module: 'fb',
+        url: attachmentURL,
+        error: resp.error
+      });
+    } else {
+      log.error('Upload file to Facebook', {
+        module: 'fb',
+        url: attachmentURL,
+        response: resp.body
+      });
+      return false;
+    }
+    return true;
+  } catch (e) {
+    log.error(e, {
+      module: 'fb'
+    });
+    throw e;
+  }
 });
 
 //--------------------------------------------------------------------------------
 function reply2(message, senderId) {
-    if (message == null) {
-        log.debug("This message ignored to send", {
-            module: "botstack:fb",
-            senderId: senderId,
-            message: message
-        });
-        return;
+  if (message == null) {
+    log.debug('This message ignored to send', {
+      module: 'botstack:fb',
+      senderId,
+      message
+    });
+    return;
+  }
+  const deferred = Q.defer();
+  log.debug('Sending message', {
+    module: 'botstack:fb',
+    senderId,
+    message
+  });
+
+  const reqData = {
+    url: 'https://graph.facebook.com/v2.9/me/messages',
+    qs: {
+      access_token: process.env.FB_PAGE_ACCESS_TOKEN
+    },
+    method: 'POST',
+    json: {
+      recipient: {
+        id: senderId
+      },
+      message
     }
-    let deferred = Q.defer();
-    log.debug("Sending message", {
-        module: "botstack:fb",
-        senderId: senderId,
-        message: message
-    });
+  };
 
-    let reqData = {
-        url: 'https://graph.facebook.com/v2.9/me/messages',
-        qs: {
-            access_token: process.env.FB_PAGE_ACCESS_TOKEN
-        },
-        method: 'POST',
-        json: {
-            recipient: {
-                id: senderId
-            },
-            message: message
-        }
-    };
+  request(reqData, (err, response, body) => {
+    if (err) {
+      log.error(err, {
+        module: 'botstack:fb',
+        reason: 'Error while sending message to FB'
+      });
+      deferred.reject(err);
+    } else {
+      dashbot.logOutgoing(reqData, response.body);
 
-    request(reqData, (err, response, body) => {
-        if (err) {
-            log.error(err, {
-                module: "botstack:fb",
-                reason: "Error while sending message to FB"
-            });
-            deferred.reject(err);
-        } else {
-            dashbot.logOutgoing(reqData, response.body);
-
-            if (response.statusCode == 200) {
-                log.debug("Send message to Facebook", {
-                    module: "botstack:fb"
-                });
-                deferred.resolve(body);
-            } else {
-                log.error("Error in Facebook response", {
-                    module: "botstack:fb",
-                    response: body
-                });
-                deferred.reject(body);
-            }
-        }
-    });
-    return deferred.promise;
+      if (response.statusCode == 200) {
+        log.debug('Send message to Facebook', {
+          module: 'botstack:fb'
+        });
+        deferred.resolve(body);
+      } else {
+        log.error('Error in Facebook response', {
+          module: 'botstack:fb',
+          response: body
+        });
+        deferred.reject(body);
+      }
+    }
+  });
+  return deferred.promise;
 }
 //--------------------------------------------------------------------------------
 
 module.exports = {
-    processMessagesFromApiAi,
-    textMessage,
-    quickReply,
-    genericMessage,
-    structuredMessage,
-    imageCard,
-    imageAttachment,
-    reply,
-    youtubeVideoCard,
-    greetingText,
-    getStartedButton,
-    persistentMenu,
-    imageReply,
-    typing,
-    attachmentUpload
+  processMessagesFromApiAi,
+  textMessage,
+  quickReply,
+  genericMessage,
+  structuredMessage,
+  imageCard,
+  imageAttachment,
+  reply,
+  youtubeVideoCard,
+  greetingText,
+  getStartedButton,
+  persistentMenu,
+  imageReply,
+  typing,
+  attachmentUpload
 };
