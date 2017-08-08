@@ -6,6 +6,7 @@ const Promise = require('bluebird');
 const co = Promise.coroutine;
 const log = require("./log.js");
 const Q = require('q');
+const utils = require('./utils');
 
 async function reply(message, senderId) {
     if (message == null) {
@@ -88,13 +89,24 @@ async function processMessagesFromApiAi(apiaiResponse, senderID, dontSend = fals
 
 function structuredMessage(message) {
     let buttons = [];
-    for (let button of message.buttons) {
+    for (const button of message.buttons) {
         if ('postback' in button) {
-            buttons.push({
-                "type": "postback",
-                "title": button.text,
-                "payload": button.postback
-            });
+            // fix API.AI bug:
+            // https://discuss.api.ai/t/bug-in-facebook-cards-with-url-buttons/7276
+            if (utils.checkValidURL(button.postback)) {
+                buttons.push({
+                    "type": "web_url",
+                    "title": button.text,
+                    "payload": button.postback
+                });
+            } else {
+                buttons.push({
+                    "type": "postback",
+                    "title": button.text,
+                    "payload": button.postback
+                });
+            }
+            //
         } else if ('url' in button) {
             buttons.push({
                 "type": "web_url",
@@ -105,7 +117,7 @@ function structuredMessage(message) {
 
     }
 
-    let element = {
+    const element = {
         "title": message.title,
         "subtitle": message.subtitle,
         "image_url": message.imageUrl
@@ -120,7 +132,7 @@ function structuredMessage(message) {
             "type": "template",
             "payload": {
                 "template_type": "generic",
-                "elements": [element]
+                "elements": [ element ]
             }
         }
     };
