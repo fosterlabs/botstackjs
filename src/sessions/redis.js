@@ -9,30 +9,29 @@ const KEY_SESSIONS = `${KEY_PREFIX}:sessions`;
 
 async function set(senderID, sessionAge_sec = 60 * 180) {
     //
-    const sessionKey = `${KEY_SESSIONS}:${senderID}`;
-    const sessionExists = await client.keysAsync(sessionKey);
-    if (sessionExists.length == 0) {
-        const data = {
-            sessionId: uuid.v1(),
-            lastUsed: new Date()
-        };
-        const res = await client.setAsync(sessionKey, JSON.stringify(data), 'EX', sessionAge_sec);
-        if (res === 0) {
-            return false;
-        } else {
-            return data;
-        }
-    } else {
-        let data = await client.getAsync(sessionKey);
-        data = JSON.parse(data);
-        data.lastUsed = new Date();
-        const res = await client.setAsync(sessionKey, JSON.stringify(data), 'EX', sessionAge_sec);
-        if (res === 0) {
-            return false;
-        } else {
-            return data;
-        }
+  const sessionKey = `${KEY_SESSIONS}:${senderID}`;
+  const sessionExists = await client.keysAsync(sessionKey);
+  if (sessionExists.length == 0) {
+    const data = {
+      sessionId: uuid.v1(),
+      lastUsed: new Date()
+    };
+    const res = await client.setAsync(sessionKey, JSON.stringify(data), 'EX', sessionAge_sec);
+    if (res === 0) {
+      return false;
     }
+    return data;
+  }
+  let data = await client.getAsync(sessionKey);
+  data = JSON.parse(data);
+  data.lastUsed = new Date();
+  const res = await client.setAsync(sessionKey, JSON.stringify(data), 'EX', sessionAge_sec);
+  if (res === 0) {
+    return false;
+  }
+  return data;
+
+
     //
     /*
     const sessionExists = await client.hexistsAsync("sessions", senderID);
@@ -62,19 +61,18 @@ async function set(senderID, sessionAge_sec = 60 * 180) {
 }
 
 async function get(senderID, autoCreate = true) {
-    const sessionKey = `${KEY_SESSIONS}:${senderID}`;
-    const sessionExists = await client.keysAsync(sessionKey);
-    if (sessionExists.length === 0) {
-        if (autoCreate) {
-            const result = await set(senderID);
-            return result;
-        } else {
-            return null;
-        }
-    } else {
-        const data = await client.getAsync(sessionKey);
-        return data;
+  const sessionKey = `${KEY_SESSIONS}:${senderID}`;
+  const sessionExists = await client.keysAsync(sessionKey);
+  if (sessionExists.length === 0) {
+    if (autoCreate) {
+      const result = await set(senderID);
+      return result;
     }
+    return null;
+  }
+  const data = await client.getAsync(sessionKey);
+  return data;
+
     /*
     const sessionExists = await client.hexistsAsync("sessions", senderID);
     if (sessionExists == 1) {
@@ -92,16 +90,15 @@ async function get(senderID, autoCreate = true) {
 }
 
 async function checkExists(senderID) {
-    const item = await get(senderID);
-    if (item) {
-        return true;
-    } else {
-        return false;
-    }
+  const item = await get(senderID);
+  if (item) {
+    return true;
+  }
+  return false;
 }
 
 module.exports = {
-    get,
-    set,
-    checkExists
+  get,
+  set,
+  checkExists
 };
