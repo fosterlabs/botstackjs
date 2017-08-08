@@ -5,6 +5,9 @@ const path = require('path');
 const Promise = require('bluebird');
 const lodash = require('lodash');
 const restify = require('restify');
+const request = require('request');
+const rp = require('request-promise');
+
 const fb = require("./fb");
 const botmetrics = require('./bot-metrics.js');
 const apiai = require('./api-ai.js');
@@ -102,7 +105,9 @@ function checkEnvs() {
 }
 
 class BotStack {
+
     constructor(botName) {
+
         botName = typeof(botName) !== 'undefined' ? botName: "default bot";
         this.botName = botName;
         this.server = restify.createServer();
@@ -220,60 +225,56 @@ class BotStack {
         });
     }
 
-    geoLocationMessage(message, senderID) {
-        co(function* () {
-            log.debug("Process GEO location message", {
-                module: "botstack:geoLocationMessage",
-                senderId: senderID,
+    async geoLocationMessage(message, senderID) {
+        log.debug("Process GEO location message", {
+            module: "botstack:geoLocationMessage",
+            senderId: senderID,
+            message
+        });
+        if (BotStackCheck("geoLocationMessage")) {
+            BotStackEvents.emit("geoLocationMessage", {
+                senderID,
                 message
             });
-            if (BotStackCheck("geoLocationMessage")) {
-                BotStackEvents.emit("geoLocationMessage", {
+            return;
+        };
+    }
+
+    async textMessage(message, senderID, dontUseEvents=false) {
+        const text = message.message.text;
+        // botmetrics.logUserRequest(text, senderID);
+        log.debug("Process text message", {
+            module: "botstack:textMessage",
+            senderId: senderID,
+            message: message
+        });
+        if (!dontUseEvents) {
+            if (BotStackCheck("textMessage")) {
+                BotStackEvents.emit("textMessage", {
                     senderID,
                     message
                 });
                 return;
-            };
-        })();
-    }
-
-    textMessage(message, senderID, dontUseEvents=false) {
-        co(function* (){
-            let text = message.message.text;
-            botmetrics.logUserRequest(text, senderID);
-            log.debug("Process text message", {
+            }
+        }
+        log.debug("Sending to API.AI", {
+            module: "botstack:textMessage",
+            senderId: senderID,
+            text: text
+        });
+        try {
+            let apiaiResp = await apiai.processTextMessage(text, senderID);
+            await fb.processMessagesFromApiAi(apiaiResp, senderID);
+            // botmetrics.logServerResponse(apiaiResp, senderID);
+        } catch (err) {
+            await fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
+            log.error(err, {
                 module: "botstack:textMessage",
                 senderId: senderID,
-                message: message
+                reason: "Error on API.AI request"
             });
-            if (!dontUseEvents) {
-                if (BotStackCheck("textMessage")) {
-                    BotStackEvents.emit("textMessage", {
-                        senderID,
-                        message
-                    });
-                    return;
-                }
-            }
-            log.debug("Sending to API.AI", {
-                module: "botstack:textMessage",
-                senderId: senderID,
-                text: text
-            });
-            try {
-                let apiaiResp = yield apiai.processTextMessage(text, senderID);
-                fb.processMessagesFromApiAi(apiaiResp, senderID);
-                botmetrics.logServerResponse(apiaiResp, senderID);
-            } catch (err) {
-                fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
-                log.error(err, {
-                    module: "botstack:textMessage",
-                    senderId: senderID,
-                    reason: "Error on API.AI request"
-                });
-                botmetrics.logServerResponse(err, senderID);
-            }
-        })();
+            // botmetrics.logServerResponse(err, senderID);
+        }
     };
 
     _smoochWebhook(context) {
@@ -281,202 +282,230 @@ class BotStack {
             module: 'botstack:smoochWebhook'
         });
         const self = context;
-        return function(req, res, next) {
-            co(function* (){
-                res.end();
-                for (const msg of lodash.get(req.body, 'messages', [])) {
-                    // message schema
-                    // https://docs.smooch.io/rest/?javascript#schema44
-                    if (msg.role !== 'appUser') {
-                        continue;
-                    }
-                    log.debug('New message from Smooch endpoint', {
-                        module: 'botstack:smoochWebhook',
-                        message: msg
-                    });
-                    const text = lodash.get(msg, 'text');
-                    const authorID = lodash.get(msg, 'authorId');
-                    const apiAiResponse = yield self.apiai.processTextMessage(text, authorID);
-                    const result = yield smooch.processMessagesFromApiAi(apiAiResponse, authorID);
+        return async function(req, res, next) {
+            res.end();
+            for (const msg of lodash.get(req.body, 'messages', [])) {
+                // message schema
+                // https://docs.smooch.io/rest/?javascript#schema44
+                if (msg.role !== 'appUser') {
+                    continue;
                 }
-            })().catch(err => console.log(err));
+                log.debug('New message from Smooch endpoint', {
+                    module: 'botstack:smoochWebhook',
+                    message: msg
+                });
+                const text = lodash.get(msg, 'text');
+                const authorID = lodash.get(msg, 'authorId');
+                let apiAiResponse = null;
+                let result = null;
+                try {
+                    apiAiResponse = await self.apiai.processTextMessage(text, authorID);
+                    result = await smooch.processMessagesFromApiAi(apiAiResponse, authorID);
+                } catch (err) {
+                    log.error(err, {
+                        module: 'botstack:smoochWebhook'
+                    });
+                }
+            }
         };
+    }
+
+    async _syncFbMessageToBackChat(req) {
+        if (process.env.BACKCHAT_FB_SYNC_URL) {
+            const reqData = {
+                url: process.env.BACKCHAT_FB_SYNC_URL,
+                resolveWithFullResponse: true,
+                method: 'POST',
+                json: req.body
+            };
+            let result = null;
+            try {
+                result = await rp(reqData);
+                if (result.statusCode != 200) {
+                    log.warn('Something wrong with BackChat endpoint', {
+                        module: 'botstack'
+                    });
+                } else {
+                    log.debug('Copy FB response to BackChat endpoint', {
+                        module: 'botstack'
+                    });
+                }
+            } catch (err) {
+                log.error(err, {
+                    module: 'botstack'
+                });
+                throw err;
+            }
+        }
     }
 
     _webhookPost(context) {
         let self = context;
-        return function(req, res, next) {
-            co(function* (){
-                res.end();
-                let entries = req.body.entry;
-                for (let entry of entries) {
-                    let messages = entry.messaging;
-                    for (let message of messages) {
-                        let senderID = message.sender.id;
-                        const isEcho = lodash.get(message, 'message.is_echo') ? true : false;
-                        if (isEcho) {
-                            continue;
-                        }
-                        log.debug("New Facebook message", {
-                            message
-                        });
-                        let isNewSession = yield sessionStore.checkExists(senderID);
-                        const isPostbackMessage = message.postback ? true : false;
-                        const isQuickReplyPayload = lodash.get(message, 'message.quick_reply.payload') ? true : false;
-                        const isTextMessage = !isQuickReplyPayload && lodash.get(message, 'message.text') ? true : false;
-                        const isGeoLocationMessage = lodash.get(message, 'message.attachments[0].payload.coordinates') ? true : false;
-                        log.debug("Detect kind of message", {
-                            module: "botstack:webhookPost",
-                            senderID,
-                            isNewSession,
-                            isPostbackMessage,
-                            isQuickReplyPayload,
-                            isTextMessage,
-                            isGeoLocationMessage
-                        });
-                        yield sessionStore.set(senderID);
-                        if (isQuickReplyPayload) {
-                            self.quickReplyPayload(message, senderID);
-                        } else if (isGeoLocationMessage) {
-                            self.geoLocationMessage(message, senderID);
-                        } else if (isTextMessage) {
-                            if (message.message.text == "Get Started") {
-                                self.welcomeMessage(message.message.text, senderID);
-                            } else {
-                                self.textMessage(message, senderID);
-                            }
-                        } else if (isPostbackMessage) {
-                            if (message.postback.payload == "Get Started") {
-                                self.welcomeMessage(message.postback.payload, senderID);
-                            } else {
-                                self.postbackMessage(message, senderID);
-                            }
+        return async function(req, res, next) {
+            res.end();
+            await this._syncFbMessageToBackChat(req);
+            let entries = req.body.entry;
+            for (const entry of entries) {
+                let messages = entry.messaging;
+                for (let message of messages) {
+                    let senderID = message.sender.id;
+                    const isEcho = lodash.get(message, 'message.is_echo') ? true : false;
+                    if (isEcho) {
+                        continue;
+                    }
+                    log.debug("New Facebook message", {
+                        module: 'botstack:webhookPost',
+                        message
+                    });
+                    let isNewSession = await sessionStore.checkExists(senderID);
+                    const isPostbackMessage = message.postback ? true : false;
+                    const isQuickReplyPayload = lodash.get(message, 'message.quick_reply.payload') ? true : false;
+                    const isTextMessage = !isQuickReplyPayload && lodash.get(message, 'message.text') ? true : false;
+                    const isGeoLocationMessage = lodash.get(message, 'message.attachments[0].payload.coordinates') ? true : false;
+                    log.debug("Detect kind of message", {
+                        module: "botstack:webhookPost",
+                        senderID,
+                        isNewSession,
+                        isPostbackMessage,
+                        isQuickReplyPayload,
+                        isTextMessage,
+                        isGeoLocationMessage
+                    });
+                    await sessionStore.set(senderID);
+                    if (isQuickReplyPayload) {
+                        await self.quickReplyPayload(message, senderID);
+                    } else if (isGeoLocationMessage) {
+                        await self.geoLocationMessage(message, senderID);
+                    } else if (isTextMessage) {
+                        if (message.message.text == "Get Started") {
+                            await self.welcomeMessage(message.message.text, senderID);
                         } else {
-                            self.fallback(message, senderID);
+                            await self.textMessage(message, senderID);
                         }
+                    } else if (isPostbackMessage) {
+                        if (message.postback.payload == "Get Started") {
+                            await self.welcomeMessage(message.postback.payload, senderID);
+                        } else {
+                            await self.postbackMessage(message, senderID);
+                        }
+                    } else {
+                        await self.fallback(message, senderID);
                     }
                 }
-            })();
+            }
         };
     }
 
-    welcomeMessage(messageText, senderID) {
-        botmetrics.logUserRequest(messageText, senderID);
+    async welcomeMessage(messageText, senderID) {
+        // botmetrics.logUserRequest(messageText, senderID);
         log.debug("Process welcome message", {
             module: "botstack:welcomeMessage",
             senderId: senderID
         });
-        co(function* (){
-            if (BotStackCheck("welcomeMessage")) {
-                BotStackEvents.emit("welcomeMessage", {
-                    senderID,
-                    messageText
-                });
-                return;
-            };
-            try {
-                let apiaiResp = yield apiai.processEvent("FACEBOOK_WELCOME", senderID);
-                log.debug("Facebook welcome result", {
-                    module: "botstack:welcomeMessage",
-                    senderId: senderID
-                });
-                fb.processMessagesFromApiAi(apiaiResp, senderID);
-                botmetrics.logServerResponse(apiaiResp, senderID);
-            } catch (err) {
-                log.error(err, {
-                    module: "botstack:welcomeMessage",
-                    senderId: senderID,
-                    reason: "Error in API.AI response"
-                });
-                fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
-                botmetrics.logServerResponse(err, senderID);
-            }
-        })();
+        if (BotStackCheck("welcomeMessage")) {
+            BotStackEvents.emit("welcomeMessage", {
+                senderID,
+                messageText
+            });
+            return;
+        };
+        try {
+            const apiaiResp = yield apiai.processEvent("FACEBOOK_WELCOME", senderID);
+            log.debug("Facebook welcome result", {
+                module: "botstack:welcomeMessage",
+                senderId: senderID
+            });
+            await fb.processMessagesFromApiAi(apiaiResp, senderID);
+            // botmetrics.logServerResponse(apiaiResp, senderID);
+        } catch (err) {
+            log.error(err, {
+                module: "botstack:welcomeMessage",
+                senderId: senderID,
+                reason: "Error in API.AI response"
+            });
+            await fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
+            // botmetrics.logServerResponse(err, senderID);
+        }
     };
 
-    postbackMessage(postback, senderID) {
-        co(function* () {
-            let text = postback.postback.payload;
-            log.debug("Process postback", {
+    async postbackMessage(postback, senderID) {
+        const text = postback.postback.payload;
+        log.debug("Process postback", {
+            module: "botstack:postbackMessage",
+            senderId: senderID,
+            postback: postback,
+            text: text
+        });
+        // botmetrics.logUserRequest(text, senderID);
+        if (BotStackCheck("postbackMessage")) {
+            BotStackEvents.emit("postbackMessage", {
+                senderID,
+                postback
+            });
+            return;
+        };
+        log.debug("Sending to API.AI", {
+            module: "botstack:postbackMessage",
+            senderId: senderID,
+            text: text
+        });
+        try {
+            const apiaiResp = yield apiai.processTextMessage(text, senderID);
+            await fb.processMessagesFromApiAi(apiaiResp, senderID);
+            // botmetrics.logServerResponse(apiaiResp, senderID);
+        } catch (err) {
+            log.error(err, {
                 module: "botstack:postbackMessage",
                 senderId: senderID,
-                postback: postback,
-                text: text
+                reason: "Error in API.AI response"
             });
-            botmetrics.logUserRequest(text, senderID);
-            if (BotStackCheck("postbackMessage")) {
-                BotStackEvents.emit("postbackMessage", {
-                    senderID,
-                    postback
-                });
-                return;
-            };
-            log.debug("Sending to API.AI", {
-                module: "botstack:postbackMessage",
-                senderId: senderID,
-                text: text
-            });
-            try {
-                let apiaiResp = yield apiai.processTextMessage(text, senderID);
-                fb.processMessagesFromApiAi(apiaiResp, senderID);
-                botmetrics.logServerResponse(apiaiResp, senderID);
-            } catch (err) {
-                log.error(err, {
-                    module: "botstack:postbackMessage",
-                    senderId: senderID,
-                    reason: "Error in API.AI response"
-                });
-                fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
-                botmetrics.logServerResponse(err, senderID);
-            }
-        })();
+            await fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
+            // botmetrics.logServerResponse(err, senderID);
+        }
     };
 
-    quickReplyPayload(message, senderID) {
-        co(function* () {
-            const text = lodash.get(message, 'message.quick_reply.payload');
-            log.debug("Process quick reply payload", {
-                module: "botstack: quickReplyPayload",
-                senderId: senderID,
-                text
+    async quickReplyPayload(message, senderID) {
+        const text = lodash.get(message, 'message.quick_reply.payload');
+        log.debug("Process quick reply payload", {
+            module: "botstack: quickReplyPayload",
+            senderId: senderID,
+            text
+        });
+        // botmetrics.logUserRequest(text, senderID);
+        if (BotStackCheck("quickReplyPayload")) {
+            BotStackEvents.emit("quickReplyPayload", {
+                senderID,
+                text,
+                message
             });
-            botmetrics.logUserRequest(text, senderID);
-            if (BotStackCheck("quickReplyPayload")) {
-                BotStackEvents.emit("quickReplyPayload", {
-                    senderID,
-                    text,
-                    message
-                });
-                return;
-            }
-            log.debug("Sending to API.AI", {
+            return;
+        }
+        log.debug("Sending to API.AI", {
+            module: "botstack:quickReplyPayload",
+            senderId: senderID,
+            text
+        });
+        try {
+            const apiaiResp = yield apiai.processTextMessage(text, senderID);
+            await fb.processMessagesFromApiAi(apiaiResp, senderID);
+            // botmetrics.logServerResponse(apiaiResp, senderID);
+        } catch (err) {
+            log.error(err, {
                 module: "botstack:quickReplyPayload",
                 senderId: senderID,
-                text
+                reason: "Error in API.AI response"
             });
-            try {
-                let apiaiResp = yield apiai.processTextMessage(text, senderID);
-                fb.processMessagesFromApiAi(apiaiResp, senderID);
-                botmetrics.logServerResponse(apiaiResp, senderID);
-            } catch (err) {
-                log.error(err, {
-                    module: "botstack:quickReplyPayload",
-                    senderId: senderID,
-                    reason: "Error in API.AI response"
-                });
-                fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
-                botmetrics.logServerResponse(err, senderID);
-            }
-        })();
+            await fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
+            // botmetrics.logServerResponse(err, senderID);
+        }
     }
 
-    fallback(message, senderID) {
+    async fallback(message, senderID) {
         log.debug("Unknown message", {
             module: "botstack:fallback",
             senderId: senderID,
             message: message
         });
-        //fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
     };
 
     startServer() {

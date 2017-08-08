@@ -24,6 +24,10 @@ async function backchatApiAiSync(response) {
                 log.warn('Something wrong with BackChat endpoint', {
                     module: 'botstack:api-ai'
                 });
+            } else {
+                log.debug('Copy API.AI response to BackChat endpoint', {
+                    module: 'botstack:api-ai'
+                });
             }
         } catch (e) {
             log.error(e, {
