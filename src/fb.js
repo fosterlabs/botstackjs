@@ -7,15 +7,50 @@ const co = Promise.coroutine;
 const log = require("./log.js");
 const Q = require('q');
 
-let processMessagesFromApiAi = co(function* (apiaiResponse, senderID) {
+async function reply(message, senderId) {
+    if (message == null) {
+        log.debug("This message ignored to send", {
+            module: "botstack:fb",
+            senderId: senderId,
+            message: message
+        });
+        return null;
+    }
+    log.debug("Sending message", {
+        module: "botstack:fb",
+        senderId: senderId,
+        message: message
+    });
+    const reqData = {
+        url: 'https://graph.facebook.com/v2.9/me/messages',
+        qs: {
+            access_token: process.env.FB_PAGE_ACCESS_TOKEN
+        },
+        method: 'POST',
+        json: {
+            recipient: {
+                id: senderId
+            },
+            message
+        },
+        resolveWithFullResponse: true
+    };
+    const res = await rp(reqData);
+    return res;
+}
+
+async function processMessagesFromApiAi(apiaiResponse, senderID, dontSend = false) {
+    let allMessages = [];
+
     if (!'messages' in apiaiResponse) {
         log.debug("Response from API.AI not contains messages", {
             module: "botstack:fb",
             response: apiaiResponse
         });
-        return;
+        return allMessages;
     }
-    for (let message of apiaiResponse.messages) {
+
+    for (const message of apiaiResponse.messages) {
         let replyMessage = null;
         log.debug("Process message from API.AI", {
             module: "botstack:fb",
@@ -23,29 +58,33 @@ let processMessagesFromApiAi = co(function* (apiaiResponse, senderID) {
             messageType: message.type
         });
         switch (message.type) {
-            case 0: // text response
-                replyMessage = textMessage(message.speech);
-                break;
-            case 1: // image response
-                replyMessage = structuredMessage(message);
-                break;
-            case 2: // card response
-                replyMessage = quickReply(message);
-                break;
-            case 3: // quick reply
-                replyMessage = imageReply(message);
-                break;
-            case 4: // custom payload
-                replyMessage = customMessageReply(message);
-                break;
-            default:
-                log.error("Unknown message type", { module: "botstack:fb "});
-                break;
+        case 0:
+            replyMessage = textMessage(message.speech);
+            break;
+        case 1:
+            replyMessage = structuredMessage(message);
+            break;
+        case 2:
+            replyMessage = quickReply(message);
+            break;
+        case 3:
+            replyMessage = imageReply(message);
+            break;
+        case 4:
+            replyMessage = customMessageReply(message);
+            break;
+        default:
+            log.error("Unknown message type", { module: "botstack:fb "});
+            break;
         };
-        yield reply(replyMessage, senderID);
+        if (dontSend) {
+            allMessages.push(replyMessage);
+        } else {
+            await reply(replyMessage, senderID);
+        }
     }
-});
-
+    return allMessages;
+}
 
 function structuredMessage(message) {
     let buttons = [];
@@ -475,37 +514,6 @@ const attachmentUpload = co(function* (attachmentURL, attachmentType = "video") 
     }
 });
 
-let reply = co(function* (message, senderId) {
-    if (message == null) {
-        log.debug("This message ignored to send", {
-            module: "botstack:fb",
-            senderId: senderId,
-            message: message
-        });
-        return null;
-    }
-    log.debug("Sending message", {
-        module: "botstack:fb",
-        senderId: senderId,
-        message: message
-    });
-    let reqData = {
-        url: 'https://graph.facebook.com/v2.9/me/messages',
-        qs: {
-            access_token: process.env.FB_PAGE_ACCESS_TOKEN
-        },
-        method: 'POST',
-        json: {
-            recipient: {
-                id: senderId
-            },
-            message: message
-        },
-        resolveWithFullResponse: true
-    };
-    let res = yield rp(reqData);
-    return res;
-});
 //--------------------------------------------------------------------------------
 function reply2(message, senderId) {
     if (message == null) {
