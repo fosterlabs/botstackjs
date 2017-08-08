@@ -1,0 +1,5 @@
+/data
+/doc
+/coverage
+_*.js
+demo*.js
