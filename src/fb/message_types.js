@@ -149,7 +149,7 @@ function customMessageReply(message) {
       }
     }
   }
-};
+}
 
 function imageCard(thumbUrl, downloadUrl, instaUrl, authName) {
   return {
