@@ -1,5 +1,3 @@
-"use strict";
-
 const fs = require('fs');
 const path = require('path');
 const Promise = require('bluebird');
@@ -9,9 +7,9 @@ const request = require('request');
 const rp = require('request-promise');
 
 const fb = require("./fb");
-const botmetrics = require('./bot-metrics.js');
-const apiai = require('./api-ai.js');
-const log = require('./log.js');
+const botmetrics = require('./bot-metrics');
+const apiai = require('./api-ai');
+const log = require('./log');
 const smooch = require('./smooch');
 
 process.on('unhandledRejection', (reason, p) => {
@@ -21,10 +19,10 @@ process.on('uncaughtException', (err) => {
     console.log(`Caught exception: ${err}`);
 });
 
-const sessionStore = require('./session.js')();
-const state = require('./state.js')();
-const db = require('./dynamodb.js');
-const s3 = require('./s3.js');
+const sessionStore = require('./session')();
+const state = require('./state')();
+const db = require('./dynamodb');
+const s3 = require('./s3');
 const co = Promise.coroutine;
 const { BotStackEmitterInit, BotStackCheck, BotStackEvents } = require('./events.js');
 

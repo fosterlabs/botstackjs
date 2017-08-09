@@ -4,14 +4,6 @@ const BotMetrics = require('node-botmetrics');
 
 const botmetrics = new BotMetrics(BOTMETRICS_TOKEN);
 
-function logUserRequest(message, conversationId) {
-  log(message, conversationId, conversationId, 'incoming');
-}
-
-function logServerResponse(message, conversationId) {
-  log(message, conversationId, conversationId, 'outgoing');
-}
-
 function log(message, conversationId, userId, type) {
   botmetrics.track({
     text: message,
@@ -21,6 +13,15 @@ function log(message, conversationId, userId, type) {
     platform: 'messenger'
   });
 }
+
+function logUserRequest(message, conversationId) {
+  log(message, conversationId, conversationId, 'incoming');
+}
+
+function logServerResponse(message, conversationId) {
+  log(message, conversationId, conversationId, 'outgoing');
+}
+
 
 exports.logUserRequest = logUserRequest;
 exports.logServerResponse = logServerResponse;

@@ -1,13 +1,11 @@
 const lodash = require('lodash');
 const apiai = require('apiai');
-const request = require('request');
 const rp = require('request-promise');
 
-const sessionStore = require('./session.js')();
-const log = require('./log.js');
+const sessionStore = require('./session')();
+const log = require('./log');
 
 const APIAI_ACCESS_TOKEN = process.env.APIAI_ACCESS_TOKEN;
-const APIAI_LANG = 'en';
 const apiAiService = apiai(APIAI_ACCESS_TOKEN);
 
 async function backchatApiAiSync(response) {
@@ -20,7 +18,7 @@ async function backchatApiAiSync(response) {
     };
     try {
       const result = await rp(reqData);
-      if (result.statusCode != 200) {
+      if (result.statusCode !== 200) {
         log.warn('Something wrong with BackChat endpoint', {
           module: 'botstack:api-ai'
         });
@@ -46,10 +44,8 @@ function processResponse(response, senderID) {
       result: response.result
     });
 
-    const responseText = lodash.get(response.result, 'fulfillment.speech');
     const responseData = lodash.get(response.result, 'fulfillment.data');
     const messages = lodash.get(response.result, 'fulfillment.messages');
-    const action = lodash.get(response.result, 'action');
     if (lodash.get(responseData, 'facebook')) {
       // FIXME: implement this type of messages
       log.debug('Response as formatted message', {
