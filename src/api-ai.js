@@ -38,6 +38,39 @@ async function backchatApiAiSync(response) {
   }
 }
 
+function processResponse(response, senderID) {
+  if (lodash.get(response, 'result')) {
+    log.debug('API.AI result', {
+      module: 'botstack:api-ai',
+      senderId: senderID,
+      result: response.result
+    });
+
+    const responseText = lodash.get(response.result, 'fulfillment.speech');
+    const responseData = lodash.get(response.result, 'fulfillment.data');
+    const messages = lodash.get(response.result, 'fulfillment.messages');
+    const action = lodash.get(response.result, 'action');
+    if (lodash.get(responseData, 'facebook')) {
+      // FIXME: implement this type of messages
+      log.debug('Response as formatted message', {
+        module: 'botstack:api-ai',
+        senderId: senderID
+      });
+      return null;
+    } else if (!lodash.isEmpty(messages)) {
+      const returnData = {
+        messages,
+        response
+      };
+      return returnData;
+    } else {
+      return null;
+    }
+  } else {
+    return null;
+  };
+}
+
 function getApiAiResponse({ apiAiRequest, senderID, eventName, message, sessionID } = {
   eventName: null, message: null
 }) {
@@ -61,7 +94,9 @@ function getApiAiResponse({ apiAiRequest, senderID, eventName, message, sessionI
       log.debug('API.AI responded', logParams);
 
       backchatApiAiSync(response);
+      resolve(processResponse(response, senderID));
 
+      /*
       if (lodash.get(response, 'result')) {
         log.debug('API.AI result', {
           module: 'botstack:api-ai',
@@ -75,7 +110,7 @@ function getApiAiResponse({ apiAiRequest, senderID, eventName, message, sessionI
         const action = lodash.get(response.result, 'action');
 
         if (lodash.get(responseData, 'facebook')) {
-                    // FIXME: implement this type of messages
+          // FIXME: implement this type of messages
           log.debug('Response as formatted message', {
             module: 'botstack:api-ai',
             senderId: senderID
@@ -88,7 +123,10 @@ function getApiAiResponse({ apiAiRequest, senderID, eventName, message, sessionI
           };
           resolve(returnData);
         }
+      } else {
+        resolve(null);
       }
+      */
     });
 
     apiAiRequest.on('error', (error) => {
@@ -145,5 +183,6 @@ async function processTextMessage(message, senderID) {
 
 module.exports = {
   processTextMessage,
-  processEvent
+  processEvent,
+  processResponse
 };

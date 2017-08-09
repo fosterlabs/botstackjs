@@ -1,5 +1,9 @@
 const rp = require('request-promise');
-const log = require('./log');
+const log = require('../log');
+
+// console.log(`reply loaded by ${__filename}`);
+// console.log(`called by ${require.main.filename}`);
+// console.log(module.filename);
 
 async function reply(message, senderId) {
   if (message == null) {
