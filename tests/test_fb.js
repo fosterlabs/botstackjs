@@ -180,4 +180,34 @@ describe('Testing FB', () => {
     assert.equal(lodash.get(data, '[0].attachment.type'), 'image');
     assert.equal(lodash.get(data, '[0].attachment.payload.url'), 'http://example.com/image.jpg');
   });
+
+  it('Testing custom payload message (type = 4)', async () => {
+    const apiAiTextResponse = require('../fixtures/apiai/custom_payload_image_response.json');
+    const data = [];
+
+    let apiai = require('../src/api-ai');
+    const apiAiResult = apiai.processResponse(apiAiTextResponse, '1234567890');
+
+    rewiremock('./reply').callThought().with({
+      reply: async (message, senderId) => {
+        data.push(message);
+        return true;
+      }
+    });
+
+    rewiremock.enable();
+    rewiremock.isolation();
+
+    const fb = require(rewiremock.resolve('../src/fb'));
+
+    const senderID = '1234567890';
+    const res = await fb.processMessagesFromApiAi(apiAiResult, senderID);
+
+    rewiremock.disable();
+    rewiremock.clear();
+
+    assert.isOk(lodash.find(data, 'attachment'));
+    assert.equal(lodash.get(data, '[0].attachment.type'), 'image');
+    assert.equal(lodash.get(data, '[0].attachment.payload.url'), 'http://example.com/image.jpg');
+  });
 });
