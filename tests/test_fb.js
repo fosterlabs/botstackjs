@@ -150,4 +150,34 @@ describe('Testing FB', () => {
     assert.equal(lodash.get(data, '[0].quick_replies[0].title'), 'Value 1');
     assert.equal(lodash.get(data, '[0].quick_replies[0].payload'), 'Value 1');
   });
+
+  it('Testing image message (type = 3)', async () => {
+    const apiAiTextResponse = require('../fixtures/apiai/image_response.json');
+    const data = [];
+
+    let apiai = require('../src/api-ai');
+    const apiAiResult = apiai.processResponse(apiAiTextResponse, '1234567890');
+
+    rewiremock('./reply').callThought().with({
+      reply: async (message, senderId) => {
+        data.push(message);
+        return true;
+      }
+    });
+
+    rewiremock.enable();
+    rewiremock.isolation();
+
+    const fb = require(rewiremock.resolve('../src/fb'));
+
+    const senderID = '1234567890';
+    const res = await fb.processMessagesFromApiAi(apiAiResult, senderID);
+
+    rewiremock.disable();
+    rewiremock.clear();
+
+    assert.isOk(lodash.find(data, 'attachment'));
+    assert.equal(lodash.get(data, '[0].attachment.type'), 'image');
+    assert.equal(lodash.get(data, '[0].attachment.payload.url'), 'http://example.com/image.jpg');
+  });
 });
