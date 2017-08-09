@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const Promise = require('bluebird');
 const lodash = require('lodash');
 const restify = require('restify');
 const rp = require('request-promise');
@@ -49,7 +48,7 @@ function checkConfig() {
   const basePath = path.dirname(require.main.filename);
   const configPath = path.join(basePath, 'conf/conf.json');
   if (fs.existsSync(configPath)) {
-    conf = require(configPath);
+    conf = require(configPath); // eslint-disable-line global-require,import/no-dynamic-require
   }
 }
 
