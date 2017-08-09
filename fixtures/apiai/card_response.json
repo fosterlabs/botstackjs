@@ -1,0 +1,51 @@
+{
+  "id": "0ea38229-9ca1-42c3-b8ce-9a9156763626",
+  "timestamp": "2017-08-09T16:24:27.177Z",
+  "lang": "ru",
+  "result": {
+    "source": "agent",
+    "resolvedQuery": "turbo test",
+    "action": "",
+    "actionIncomplete": false,
+    "parameters": {},
+    "contexts": [],
+    "metadata": {
+      "intentId": "762939a1-36f6-4a99-9de3-349e72ecb7be",
+      "webhookUsed": "false",
+      "webhookForSlotFillingUsed": "false",
+      "intentName": "turboTest"
+    },
+    "fulfillment": {
+      "speech": "",
+      "messages": [
+        {
+          "type": 1,
+          "platform": "facebook",
+          "title": "Super Card Title",
+          "subtitle": "Super Card Subtitle",
+          "imageUrl": "http://example.com/image.jpg",
+          "buttons": [
+            {
+              "text": "Button 1",
+              "postback": "Postback 1"
+            },
+            {
+              "text": "Button 2",
+              "postback": "Postback 2"
+            },
+            {
+              "text": "Button 3",
+              "postback": "Postback 3"
+            }
+          ]
+        }
+      ]
+    },
+    "score": 1
+  },
+  "status": {
+    "code": 200,
+    "errorType": "success"
+  },
+  "sessionId": "39636182-666f-4aef-ae39-63668ff4e8f5"
+}
