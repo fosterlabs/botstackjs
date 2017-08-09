@@ -46,6 +46,36 @@ describe('Testing FB', () => {
     assert.equal(res.length, 0);
   });
 
+  it('Testing text response (type = 0) with dontSend=true', async () => {
+    const apiAiTextResponse = require('../fixtures/apiai/text_response.json');
+    const data = [];
+
+    let apiai = require('../src/api-ai');
+    const apiAiResult = apiai.processResponse(apiAiTextResponse, '1234567890');
+
+    rewiremock('./reply').callThought().with({
+      reply: async (message, senderId) => {
+        data.push(message);
+        return true;
+      }
+    });
+
+    rewiremock.enable();
+    rewiremock.isolation();
+
+    const fb = require(rewiremock.resolve('../src/fb'));
+
+    const senderID = '1234567890';
+    const res = await fb.processMessagesFromApiAi(apiAiResult, senderID, true);
+
+    rewiremock.disable();
+    rewiremock.clear();
+
+    assert.equal(lodash.get(lodash.find(res, 'text'), 'text'), 'Hello turbo!');
+    assert.equal(res.length, 1);
+    assert.equal(data.length, 0);
+  });
+
   it('Testing structured message (type = 1) with postback', async () => {
     const apiAiTextResponse = require('../fixtures/apiai/card_response.json');
     const data = [];
