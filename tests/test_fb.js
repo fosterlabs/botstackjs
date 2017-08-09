@@ -107,7 +107,6 @@ describe('Testing FB', () => {
     rewiremock.clear();
 
     assert.isOk(lodash.find(data, 'attachment'));
-    console.log(JSON.stringify(data, null, 2));
 
     assert.equal(lodash.get(data, '[0].attachment.payload.elements[0].title'), 'Super Card Title');
     assert.equal(lodash.get(data, '[0].attachment.payload.elements[0].subtitle'), 'Super Card Subtitle');
@@ -117,5 +116,38 @@ describe('Testing FB', () => {
     assert.equal(lodash.get(data, '[0].attachment.payload.elements[0].buttons[0].title'), 'Button 1');
     assert.equal(lodash.get(data, '[0].attachment.payload.elements[0].buttons[0].payload'), 'http://example.com/button.jpg');
 
+  });
+
+  it('Testing quick replies message (type = 2)', async () => {
+    const apiAiTextResponse = require('../fixtures/apiai/quick_replies_response.json');
+    const data = [];
+
+    let apiai = require('../src/api-ai');
+    const apiAiResult = apiai.processResponse(apiAiTextResponse, '1234567890');
+
+    rewiremock('./reply').callThought().with({
+      reply: async (message, senderId) => {
+        data.push(message);
+        return true;
+      }
+    });
+
+    rewiremock.enable();
+    rewiremock.isolation();
+
+    const fb = require(rewiremock.resolve('../src/fb'));
+
+    const senderID = '1234567890';
+    const res = await fb.processMessagesFromApiAi(apiAiResult, senderID);
+
+    rewiremock.disable();
+    rewiremock.clear();
+
+    assert.isOk(lodash.find(data, 'quick_replies'));
+    assert.equal(lodash.get(data, '[0].text'), 'Choose');
+    assert.equal(lodash.get(data, '[0].quick_replies', []).length, 3);
+    assert.equal(lodash.get(data, '[0].quick_replies[0].content_type'), 'text');
+    assert.equal(lodash.get(data, '[0].quick_replies[0].title'), 'Value 1');
+    assert.equal(lodash.get(data, '[0].quick_replies[0].payload'), 'Value 1');
   });
 });
