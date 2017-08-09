@@ -63,12 +63,10 @@ function processResponse(response, senderID) {
         response
       };
       return returnData;
-    } else {
-      return null;
     }
-  } else {
     return null;
-  };
+  }
+  return null;
 }
 
 function getApiAiResponse({ apiAiRequest, senderID, eventName, message, sessionID } = {

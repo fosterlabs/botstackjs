@@ -16,12 +16,11 @@ const assert = chai.assert;
 const expect = chai.expect;
 
 describe('Testing FB', () => {
-
   it('Testing text response (type = 0)', async () => {
     const apiAiTextResponse = require('../fixtures/apiai/text_response.json');
     const data = [];
 
-    let apiai = require('../src/api-ai');
+    const apiai = require('../src/api-ai');
     const apiAiResult = apiai.processResponse(apiAiTextResponse, '1234567890');
 
     rewiremock('./reply').callThought().with({
@@ -50,7 +49,7 @@ describe('Testing FB', () => {
     const apiAiTextResponse = require('../fixtures/apiai/text_response.json');
     const data = [];
 
-    let apiai = require('../src/api-ai');
+    const apiai = require('../src/api-ai');
     const apiAiResult = apiai.processResponse(apiAiTextResponse, '1234567890');
 
     rewiremock('./reply').callThought().with({
@@ -80,7 +79,7 @@ describe('Testing FB', () => {
     const apiAiTextResponse = require('../fixtures/apiai/card_response.json');
     const data = [];
 
-    let apiai = require('../src/api-ai');
+    const apiai = require('../src/api-ai');
     const apiAiResult = apiai.processResponse(apiAiTextResponse, '1234567890');
 
     rewiremock('./reply').callThought().with({
@@ -115,7 +114,7 @@ describe('Testing FB', () => {
     const apiAiTextResponse = require('../fixtures/apiai/card_postback_image_response.json');
     const data = [];
 
-    let apiai = require('../src/api-ai');
+    const apiai = require('../src/api-ai');
     const apiAiResult = apiai.processResponse(apiAiTextResponse, '1234567890');
 
     rewiremock('./reply').callThought().with({
@@ -145,14 +144,13 @@ describe('Testing FB', () => {
     assert.equal(lodash.get(data, '[0].attachment.payload.elements[0].buttons[0].type'), 'web_url');
     assert.equal(lodash.get(data, '[0].attachment.payload.elements[0].buttons[0].title'), 'Button 1');
     assert.equal(lodash.get(data, '[0].attachment.payload.elements[0].buttons[0].payload'), 'http://example.com/button.jpg');
-
   });
 
   it('Testing quick replies message (type = 2)', async () => {
     const apiAiTextResponse = require('../fixtures/apiai/quick_replies_response.json');
     const data = [];
 
-    let apiai = require('../src/api-ai');
+    const apiai = require('../src/api-ai');
     const apiAiResult = apiai.processResponse(apiAiTextResponse, '1234567890');
 
     rewiremock('./reply').callThought().with({
@@ -185,7 +183,7 @@ describe('Testing FB', () => {
     const apiAiTextResponse = require('../fixtures/apiai/image_response.json');
     const data = [];
 
-    let apiai = require('../src/api-ai');
+    const apiai = require('../src/api-ai');
     const apiAiResult = apiai.processResponse(apiAiTextResponse, '1234567890');
 
     rewiremock('./reply').callThought().with({
@@ -215,7 +213,7 @@ describe('Testing FB', () => {
     const apiAiTextResponse = require('../fixtures/apiai/custom_payload_image_response.json');
     const data = [];
 
-    let apiai = require('../src/api-ai');
+    const apiai = require('../src/api-ai');
     const apiAiResult = apiai.processResponse(apiAiTextResponse, '1234567890');
 
     rewiremock('./reply').callThought().with({

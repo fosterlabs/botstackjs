@@ -8,9 +8,8 @@ module.exports = (req, res, next) => {
   });
 
   res.end();
-  console.log('===Received a database hook from API.ai');
 
-    // add to db
+  // add to db
   if (req.body) {
     db.logApiaiObject(req.body);
   } else {
