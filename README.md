@@ -1,5 +1,7 @@
 ## BotStackjs
 
+[![Build Status](https://travis-ci.org/cama/botstackjs.svg?branch=master)](https://travis-ci.org/cama/botstackjs)
+
 ## Why?
 We believe the beginning of a successful bot has little to do with engineering and everything to do with the skill of the product owner in acquiring users and keeping them faster than their competition.
 
