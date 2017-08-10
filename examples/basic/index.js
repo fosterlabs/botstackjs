@@ -1,2 +1,2 @@
 require('dotenv').config();
-module.exports = require('./lib/app.js')
+module.exports = require('./lib/app.js');

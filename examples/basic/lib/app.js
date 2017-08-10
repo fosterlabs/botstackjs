@@ -1,6 +1,6 @@
 const BotStack = require('../../../index.js');
 
-class DemoApp extends BotStack {};
+class DemoApp extends BotStack {}
 
-const bot = new DemoApp("demo-app");
+const bot = new DemoApp('demo-app');
 bot.startServer();

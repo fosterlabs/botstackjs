@@ -1,0 +1,35 @@
+{
+  "id": "75327190-096a-400a-a79b-4a7f5863d32c",
+  "timestamp": "2017-08-09T17:08:00.097Z",
+  "lang": "ru",
+  "result": {
+    "source": "agent",
+    "resolvedQuery": "turbo test",
+    "action": "",
+    "actionIncomplete": false,
+    "parameters": {},
+    "contexts": [],
+    "metadata": {
+      "intentId": "762939a1-36f6-4a99-9de3-349e72ecb7be",
+      "webhookUsed": "false",
+      "webhookForSlotFillingUsed": "false",
+      "intentName": "turboTest"
+    },
+    "fulfillment": {
+      "speech": "",
+      "messages": [
+        {
+          "type": 3,
+          "platform": "facebook",
+          "imageUrl": "http://example.com/image.jpg"
+        }
+      ]
+    },
+    "score": 1
+  },
+  "status": {
+    "code": 200,
+    "errorType": "success"
+  },
+  "sessionId": "39636182-666f-4aef-ae39-63668ff4e8f5"
+}
