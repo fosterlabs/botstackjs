@@ -11,7 +11,12 @@ const { reply } = require('./reply');
 async function processMessagesFromApiAi(apiaiResponse, senderID, dontSend = false) {
   const allMessages = [];
 
-  if (!('messages' in apiaiResponse)) {
+  if (!apiaiResponse) {
+    log.debug('Response from API.AI is empty', {
+      module: 'botstack:fb'
+    });
+    return allMessages;
+  } else if (!('messages' in apiaiResponse)) {
     log.debug('Response from API.AI not contains messages', {
       module: 'botstack:fb',
       response: apiaiResponse
