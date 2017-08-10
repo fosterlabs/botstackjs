@@ -13,7 +13,7 @@ chai.use(chaiAsPromised);
 const assert = chai.assert;
 
 describe('Testing FB reply', () => {
-  it('Test One', async () => {
+  it('fb reply', async () => {
 
     let rpData = null;
 
@@ -29,6 +29,10 @@ describe('Testing FB reply', () => {
     const fbMsg = require(rewiremock.resolve('../src/fb/message_types'));
     const senderID = '1234567890';
     await fb.reply(fbMsg.textMessage('hello'), senderID);
+
+    rewiremock.disable();
+    rewiremock.clear();
+
     console.log(rpData);
     assert.equal(lodash.get(rpData, 'method'), 'POST');
     assert.equal(lodash.get(rpData, 'json.recipient.id'), senderID);

@@ -2,6 +2,7 @@ const rp = require('request-promise');
 const log = require('../log');
 
 async function attachmentUpload(attachmentURL, attachmentType = 'video') {
+
   const msg = {
     message: {
       attachment: {
@@ -39,13 +40,14 @@ async function attachmentUpload(attachmentURL, attachmentType = 'video') {
         error: resp.error
       });
       return false;
+    } else if (resp.statusCode !== 200) {
+      log.error('Upload file to Facebook', {
+        module: 'fb',
+        url: attachmentURL,
+        response: resp.body
+      });
+      return false;
     }
-    log.error('Upload file to Facebook', {
-      module: 'fb',
-      url: attachmentURL,
-      response: resp.body
-    });
-    return false;
 
     return true;
   } catch (e) {
