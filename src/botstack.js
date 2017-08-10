@@ -52,6 +52,7 @@ function checkConfig() {
   }
 }
 
+/* eslint-disable no-restricted-syntax */
 function checkEnvs() {
   for (const envVar of envVars) {
     if (envVar.name in process.env) {
@@ -70,7 +71,6 @@ function checkEnvs() {
   const notFoundEnvs = [];
   for (const e of checkVars) {
     if (!(e in process.env)) {
-      console.log(e);
       notFoundEnvs.push(e);
     }
   }
@@ -100,11 +100,11 @@ function checkEnvs() {
     throw new Error(`Not found env variables: ${notFoundEnvs.join(',')}`);
   }
 }
+/* eslint-enable no-restricted-syntax */
 
 class BotStack {
 
-  constructor(botName) {
-    botName = typeof (botName) !== 'undefined' ? botName : 'default bot';
+  constructor(botName = 'default bot') {
     this.botName = botName;
     this.server = restify.createServer();
 
@@ -112,7 +112,7 @@ class BotStack {
     checkEnvs();
 
     if ('subscribeTo' in conf) {
-      this.subscriber = require('./redis');
+      this.subscriber = require('./redis'); // eslint-disable-line global-require
       this.subscriber.on('message', (channel, message) => {
         this.subscription(message);
       });
@@ -144,7 +144,7 @@ class BotStack {
     this.s3 = s3;
     this.log = log;
 
-    if (Object.keys(conf).length == 0) {
+    if (Object.keys(conf).length === 0) {
       log.debug('Started with default config (no configuration file found)', { module: 'botstack:constructor' });
     } else {
       log.debug('Custom config file loaded', { module: 'botstack:constructor' });
@@ -174,6 +174,7 @@ class BotStack {
 
     this.server.get('/', (req, res, next) => {
       res.send('Nothing to see here...');
+      return next();
     });
 
     this.server.get('/webhook/', (req, res, next) => {
@@ -187,9 +188,9 @@ class BotStack {
       return next();
     });
 
-    this.server.post('/webhook/', this._webhookPost(this));
+    this.server.post('/webhook/', this._webhookPost(this)); // eslint-disable-line no-underscore-dangle
 
-    this.server.post('/smooch/webhook/', this._smoochWebhook(this));
+    this.server.post('/smooch/webhook/', this._smoochWebhook(this)); // eslint-disable-line no-underscore-dangle
 
     this.server.post('/apiaidb/', (req, res, next) => {
       res.json({
@@ -201,7 +202,7 @@ class BotStack {
       log.debug('Received a database hook from API.AI', {
         module: 'botstack:apiaidb'
       });
-            // add to db
+      // add to db
       if (req.body) {
         db.logApiaiObject(req.body);
       } else {
@@ -213,14 +214,16 @@ class BotStack {
     });
   }
 
+  /* eslint-disable no-unused-vars */
   subscription(message) {
-    log.debug('Subscription method not implemented', {
+    this.log.debug('Subscription method not implemented', {
       module: 'botstack:subscription'
     });
   }
+  /* eslint-enable no-unused-vars */
 
   async geoLocationMessage(message, senderID) {
-    log.debug('Process GEO location message', {
+    this.log.debug('Process GEO location message', {
       module: 'botstack:geoLocationMessage',
       senderId: senderID,
       message
@@ -235,8 +238,8 @@ class BotStack {
 
   async textMessage(message, senderID, dontUseEvents = false) {
     const text = message.message.text;
-        // botmetrics.logUserRequest(text, senderID);
-    log.debug('Process text message', {
+    // botmetrics.logUserRequest(text, senderID);
+    this.log.debug('Process text message', {
       module: 'botstack:textMessage',
       senderId: senderID,
       message
@@ -250,7 +253,7 @@ class BotStack {
         return;
       }
     }
-    log.debug('Sending to API.AI', {
+    this.log.debug('Sending to API.AI', {
       module: 'botstack:textMessage',
       senderId: senderID,
       text
@@ -271,19 +274,20 @@ class BotStack {
   }
 
   _smoochWebhook(context) {
-    log.debug('Smooch API endpoint ready', {
+    this.log.debug('Smooch API endpoint ready', {
       module: 'botstack:smoochWebhook'
     });
     const self = context;
-    return async function (req, res, next) {
+    return async function (req, res, next) { // eslint-disable-line func-names, no-unused-vars
       res.end();
+      /* eslint-disable no-restricted-syntax, no-continue, no-await-in-loop */
       for (const msg of lodash.get(req.body, 'messages', [])) {
-                // message schema
-                // https://docs.smooch.io/rest/?javascript#schema44
+        // message schema
+        // https://docs.smooch.io/rest/?javascript#schema44
         if (msg.role !== 'appUser') {
           continue;
         }
-        log.debug('New message from Smooch endpoint', {
+        this.log.debug('New message from Smooch endpoint', {
           module: 'botstack:smoochWebhook',
           message: msg
         });
@@ -294,12 +298,17 @@ class BotStack {
         try {
           apiAiResponse = await self.apiai.processTextMessage(text, authorID);
           result = await smooch.processMessagesFromApiAi(apiAiResponse, authorID);
+          this.log.debug('Smooch API result', {
+            module: 'botstack:smoochWebhook',
+            result
+          });
         } catch (err) {
-          log.error(err, {
+          this.log.error(err, {
             module: 'botstack:smoochWebhook'
           });
         }
       }
+      /* eslint-enable no-restricted-syntax, no-continue */
     };
   }
 
@@ -314,17 +323,17 @@ class BotStack {
       let result = null;
       try {
         result = await rp(reqData);
-        if (result.statusCode != 200) {
-          log.warn('Something wrong with BackChat endpoint', {
+        if (result.statusCode !== 200) {
+          this.log.warn('Something wrong with BackChat endpoint', {
             module: 'botstack'
           });
         } else {
-          log.debug('Copy FB response to BackChat endpoint', {
+          this.log.debug('Copy FB response to BackChat endpoint', {
             module: 'botstack'
           });
         }
       } catch (err) {
-        log.error(err, {
+        this.log.error(err, {
           module: 'botstack'
         });
         throw err;
@@ -332,11 +341,12 @@ class BotStack {
     }
   }
 
+  /* eslint-disable class-methods-use-this, func-names, no-restricted-syntax */
   _webhookPost(context) {
     const self = context;
-    return async function (req, res, next) {
+    return async function (req, res, next) { // eslint-disable-line no-unused-vars
       res.end();
-      await this._syncFbMessageToBackChat(req);
+      await this._syncFbMessageToBackChat(req); // eslint-disable-line no-underscore-dangle
       const entries = req.body.entry;
       for (const entry of entries) {
         const messages = entry.messaging;
@@ -344,7 +354,7 @@ class BotStack {
           const senderID = message.sender.id;
           const isEcho = !!lodash.get(message, 'message.is_echo');
           if (isEcho) {
-            continue;
+            continue; // eslint-disable-line no-continue
           }
           log.debug('New Facebook message', {
             module: 'botstack:webhookPost',
@@ -370,13 +380,13 @@ class BotStack {
           } else if (isGeoLocationMessage) {
             await self.geoLocationMessage(message, senderID);
           } else if (isTextMessage) {
-            if (message.message.text == 'Get Started') {
+            if (message.message.text === 'Get Started') {
               await self.welcomeMessage(message.message.text, senderID);
             } else {
               await self.textMessage(message, senderID);
             }
           } else if (isPostbackMessage) {
-            if (message.postback.payload == 'Get Started') {
+            if (message.postback.payload === 'Get Started') {
               await self.welcomeMessage(message.postback.payload, senderID);
             } else {
               await self.postbackMessage(message, senderID);
@@ -388,10 +398,11 @@ class BotStack {
       }
     };
   }
+  /* eslint-enable class-methods-use-this, func-names */
 
   async welcomeMessage(messageText, senderID) {
-        // botmetrics.logUserRequest(messageText, senderID);
-    log.debug('Process welcome message', {
+    // botmetrics.logUserRequest(messageText, senderID);
+    this.log.debug('Process welcome message', {
       module: 'botstack:welcomeMessage',
       senderId: senderID
     });
@@ -404,26 +415,26 @@ class BotStack {
     }
     try {
       const apiaiResp = await apiai.processEvent('FACEBOOK_WELCOME', senderID);
-      log.debug('Facebook welcome result', {
+      this.log.debug('Facebook welcome result', {
         module: 'botstack:welcomeMessage',
         senderId: senderID
       });
       await fb.processMessagesFromApiAi(apiaiResp, senderID);
-            // botmetrics.logServerResponse(apiaiResp, senderID);
+      // botmetrics.logServerResponse(apiaiResp, senderID);
     } catch (err) {
-      log.error(err, {
+      this.log.error(err, {
         module: 'botstack:welcomeMessage',
         senderId: senderID,
         reason: 'Error in API.AI response'
       });
       await fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
-            // botmetrics.logServerResponse(err, senderID);
+      // botmetrics.logServerResponse(err, senderID);
     }
   }
 
   async postbackMessage(postback, senderID) {
     const text = postback.postback.payload;
-    log.debug('Process postback', {
+    this.log.debug('Process postback', {
       module: 'botstack:postbackMessage',
       senderId: senderID,
       postback,
@@ -437,7 +448,7 @@ class BotStack {
       });
       return;
     }
-    log.debug('Sending to API.AI', {
+    this.log.debug('Sending to API.AI', {
       module: 'botstack:postbackMessage',
       senderId: senderID,
       text
@@ -445,21 +456,21 @@ class BotStack {
     try {
       const apiaiResp = await apiai.processTextMessage(text, senderID);
       await fb.processMessagesFromApiAi(apiaiResp, senderID);
-            // botmetrics.logServerResponse(apiaiResp, senderID);
+      // botmetrics.logServerResponse(apiaiResp, senderID);
     } catch (err) {
-      log.error(err, {
+      this.log.error(err, {
         module: 'botstack:postbackMessage',
         senderId: senderID,
         reason: 'Error in API.AI response'
       });
       await fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
-            // botmetrics.logServerResponse(err, senderID);
+      // botmetrics.logServerResponse(err, senderID);
     }
   }
 
   async quickReplyPayload(message, senderID) {
     const text = lodash.get(message, 'message.quick_reply.payload');
-    log.debug('Process quick reply payload', {
+    this.log.debug('Process quick reply payload', {
       module: 'botstack: quickReplyPayload',
       senderId: senderID,
       text
@@ -473,7 +484,7 @@ class BotStack {
       });
       return;
     }
-    log.debug('Sending to API.AI', {
+    this.log.debug('Sending to API.AI', {
       module: 'botstack:quickReplyPayload',
       senderId: senderID,
       text
@@ -481,20 +492,20 @@ class BotStack {
     try {
       const apiaiResp = await apiai.processTextMessage(text, senderID);
       await fb.processMessagesFromApiAi(apiaiResp, senderID);
-            // botmetrics.logServerResponse(apiaiResp, senderID);
+      // botmetrics.logServerResponse(apiaiResp, senderID);
     } catch (err) {
-      log.error(err, {
+      this.log.error(err, {
         module: 'botstack:quickReplyPayload',
         senderId: senderID,
         reason: 'Error in API.AI response'
       });
       await fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
-            // botmetrics.logServerResponse(err, senderID);
+      // botmetrics.logServerResponse(err, senderID);
     }
   }
 
   async fallback(message, senderID) {
-    log.debug('Unknown message', {
+    this.log.debug('Unknown message', {
       module: 'botstack:fallback',
       senderId: senderID,
       message
@@ -503,9 +514,14 @@ class BotStack {
 
   startServer() {
     const port = process.env.PORT || 1337;
+    const self = this;
     this.server.listen(port, () => {
-      console.log(`Bot '${this.botName}' is ready`);
-      console.log('listening on port:%s %s %s', port, this.server.name, this.server.url);
+      self.log.info(`Bot '${this.botName}' is ready`, {
+        module: 'botstack'
+      });
+      self.log.info(`listening on port:${port} ${this.server.name} ${this.server.url}`, {
+        module: 'botstack'
+      });
     });
   }
 }

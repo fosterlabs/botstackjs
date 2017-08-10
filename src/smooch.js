@@ -80,6 +80,7 @@ function imageReply(message) {
 }
 
 async function processMessagesFromApiAi(apiAiResponse, senderID) {
+  const results = [];
   for (const message of apiAiResponse.messages) {
     let replyMessage = null;
     log.debug('Process message from API.AI', {
@@ -96,7 +97,9 @@ async function processMessagesFromApiAi(apiAiResponse, senderID) {
         break;
     }
     const result = await sendCommonMessage(senderID, replyMessage);
+    results.push(result);
   }
+  return results;
 }
 
 module.exports = {
