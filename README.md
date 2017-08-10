@@ -7,6 +7,10 @@ We believe the beginning of a successful bot has little to do with engineering a
 
 That's why we've open sourced our Facebook Messenger node.js code base so you can get all the latest features from API.AI, Facebook Messenger and Analytics like Dashbot and BotMetrics. While setting yourself up for success with a robust and extensible code base when you've tested your assumptions and are ready for an engineer to build domain specific features.
 
+## Installation
+* `npm install botstack`
+* set API keys in env_tmpl
+
 ## Features
 * Emjoi Support 
 * Configurable 'Greeting, Get Started Button & Action Menu'
@@ -34,10 +38,6 @@ That's why we've open sourced our Facebook Messenger node.js code base so you ca
 ## Roadmap
 * Facebook Webviews
 * Rabbit MQ Support
-
-## Installation
-* git clone https://github.com/cama/botstackjs.git
-* set API keys in env_tmpl
 
 ## How to get involved?
 It's still early days and everything we are learning on customers messenger bots we are trying to incorporate here. 
