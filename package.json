@@ -9,7 +9,7 @@
     "cover": "node_modules/.bin/nyc node_modules/.bin/_mocha tests"
   },
   "author": {
-    "name": "joel",
+    "name": "Foster Labs",
     "email": ""
   },
   "dependencies": {
