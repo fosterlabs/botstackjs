@@ -33,7 +33,6 @@ describe('Testing FB reply', () => {
     rewiremock.disable();
     rewiremock.clear();
 
-    console.log(rpData);
     assert.equal(lodash.get(rpData, 'method'), 'POST');
     assert.equal(lodash.get(rpData, 'json.recipient.id'), senderID);
     assert.equal(lodash.get(rpData, 'json.message.text'), 'hello');
