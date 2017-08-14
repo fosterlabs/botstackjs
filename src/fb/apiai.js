@@ -1,3 +1,4 @@
+const lodash = require('lodash');
 const log = require('../log');
 const {
   textMessage,
@@ -7,6 +8,8 @@ const {
   customMessageReply
 } = require('./message_types');
 const { reply } = require('./reply');
+
+const useOnlyFacebookResponse = lodash.has(process.env, 'BOTSTACK_ONLY_FB_RESP');
 
 async function processMessagesFromApiAi(apiaiResponse, senderID, dontSend = false) {
   const allMessages = [];
@@ -31,6 +34,11 @@ async function processMessagesFromApiAi(apiaiResponse, senderID, dontSend = fals
       message,
       messageType: message.type
     });
+    if(useOnlyFacebookResponse) {
+      if(!(lodash.get(message, 'platform') === 'facebook')) {
+        continue;
+      }
+    }
     switch (message.type) {
       case 0:
         replyMessage = textMessage(message.speech);
