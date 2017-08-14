@@ -192,7 +192,7 @@ class BotStack {
 
     this.server.post('/smooch/webhook/', this._smoochWebhook(this)); // eslint-disable-line no-underscore-dangle
 
-    this.server.post('/apiaidb/', (req, res, next) => {
+    this.server.post('/apiaidb/', function (req, res, next) {
       res.json({
         speech: req.body.result.fulfillment.speech,
         displayText: req.body.result.fulfillment.speech,
@@ -287,7 +287,7 @@ class BotStack {
         if (msg.role !== 'appUser') {
           continue;
         }
-        this.log.debug('New message from Smooch endpoint', {
+        self.log.debug('New message from Smooch endpoint', {
           module: 'botstack:smoochWebhook',
           message: msg
         });
@@ -298,12 +298,12 @@ class BotStack {
         try {
           apiAiResponse = await self.apiai.processTextMessage(text, authorID);
           result = await smooch.processMessagesFromApiAi(apiAiResponse, authorID);
-          this.log.debug('Smooch API result', {
+          self.log.debug('Smooch API result', {
             module: 'botstack:smoochWebhook',
             result
           });
         } catch (err) {
-          this.log.error(err, {
+          self.log.error(err, {
             module: 'botstack:smoochWebhook'
           });
         }
@@ -346,7 +346,7 @@ class BotStack {
     const self = context;
     return async function (req, res, next) { // eslint-disable-line no-unused-vars
       res.end();
-      await this._syncFbMessageToBackChat(req); // eslint-disable-line no-underscore-dangle
+      await self._syncFbMessageToBackChat(req); // eslint-disable-line no-underscore-dangle
       const entries = req.body.entry;
       for (const entry of entries) {
         const messages = entry.messaging;
@@ -516,10 +516,10 @@ class BotStack {
     const port = process.env.PORT || 1337;
     const self = this;
     this.server.listen(port, () => {
-      self.log.info(`Bot '${this.botName}' is ready`, {
+      self.log.info(`Bot '${self.botName}' is ready`, {
         module: 'botstack'
       });
-      self.log.info(`listening on port:${port} ${this.server.name} ${this.server.url}`, {
+      self.log.info(`listening on port:${port} ${self.server.name} ${self.server.url}`, {
         module: 'botstack'
       });
     });
