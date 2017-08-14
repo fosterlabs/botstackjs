@@ -1,0 +1,60 @@
+{
+  "id": "6d4a69fc-a313-432c-9d69-0ad72734b86b",
+  "timestamp": "2017-08-14T16:31:50.134Z",
+  "lang": "en",
+  "result": {
+    "source": "agent",
+    "resolvedQuery": "hello test",
+    "action": "",
+    "actionIncomplete": false,
+    "parameters": {},
+    "contexts": [],
+    "metadata": {
+      "intentId": "9ee42165-3e65-4df1-ae90-fe02a413f86b",
+      "webhookUsed": "false",
+      "webhookForSlotFillingUsed": "false",
+      "intentName": "hello test"
+    },
+    "fulfillment": {
+      "speech": "Hello from demo",
+      "messages": [
+        {
+          "type": 0,
+          "platform": "facebook",
+          "speech": "Hello from demo"
+        },
+        {
+          "type": 1,
+          "platform": "facebook",
+          "title": "Hello",
+          "subtitle": "Hello",
+          "imageUrl": "http://coffeepedia.ru/wp-content/uploads/2014/02/11.jpg.png",
+          "buttons": [
+            {
+              "text": "One",
+              "postback": "https://ya.ru"
+            },
+            {
+              "text": "Two",
+              "postback": "https://google.com"
+            },
+            {
+              "text": "Three",
+              "postback": "https://youtube.com"
+            }
+          ]
+        },
+        {
+          "type": 0,
+          "speech": "Hello from demo"
+        }
+      ]
+    },
+    "score": 1
+  },
+  "status": {
+    "code": 200,
+    "errorType": "success"
+  },
+  "sessionId": "39636182-666f-4aef-ae39-63668ff4e8f5"
+}
