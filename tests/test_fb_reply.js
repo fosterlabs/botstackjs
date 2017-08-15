@@ -14,7 +14,6 @@ const assert = chai.assert;
 
 describe('Testing FB reply', () => {
   it('fb reply', async () => {
-
     let rpData = null;
 
     rewiremock('request-promise').with(async (data) => {
