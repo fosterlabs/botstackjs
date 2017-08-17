@@ -19,6 +19,8 @@ const {
   imageReply
 } = require('./message_types');
 
+const { setPersistentMenuViaProfile } = require('./persistent_menu');
+
 module.exports = {
   processMessagesFromApiAi,
   reply,
@@ -27,6 +29,7 @@ module.exports = {
   greetingText,
   getStartedButton,
   persistentMenu,
+  setPersistentMenuViaProfile,
   deletePersistentMenu,
   textMessage,
   quickReply,
