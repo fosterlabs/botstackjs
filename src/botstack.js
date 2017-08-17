@@ -8,6 +8,8 @@ const fb = require('./fb');
 const apiai = require('./api-ai');
 const log = require('./log');
 const smooch = require('./smooch');
+const environments = require('./environments');
+const settings = require('./settings');
 
 /*
 process.on('unhandledRejection', (reason, p) => {
@@ -25,118 +27,11 @@ const s3 = require('./s3');
 
 const { BotStackEmitterInit, BotStackCheck, BotStackEvents } = require('./events');
 
-let conf = {};
-const envVars = [
-    { name: 'FB_PAGE_ACCESS_TOKEN', required: true, module: ['fb'] },
-    { name: 'FB_VERIFY_TOKEN', required: true, module: ['fb'] },
-    { name: 'APIAI_ACCESS_TOKEN', required: true, module: ['api-ai'] },
-    { name: 'AWS_ACCESS_KEY', required: false, module: ['s3'] },
-    { name: 'AWS_SECRET_KEY', required: false, module: ['s3'] },
-    { name: 'BUCKET_NAME', required: false, module: ['s3'] },
-    { name: 'BOTLYTICS_API_KEY', required: false, module: ['botlyptics'] },
-    { name: 'BOTMETRICS_TOKEN', required: false, module: ['botmetrics'] },
-    { name: 'DASHBOT_API_KEY', required: false, module: ['dashbot'] },
-    { name: 'MONGODB_URI', required: false, module: ['db'] },
-    { name: 'REDIS_URL', required: false, module: ['session'] },
-    { name: 'SMOOCH_KEY_ID', required: false, module: ['smooch'] },
-    { name: 'SMOOCH_SECRET', required: false, module: ['smooch'] },
-    { name: 'SMOOCH_SCOPE', required: false, module: ['smooch'] }
-];
-let enabledModules = [];
-
-function checkConfig() {
-  const basePath = path.dirname(require.main.filename);
-  const configPath = path.join(basePath, 'conf/conf.json');
-  if (fs.existsSync(configPath)) {
-    conf = require(configPath); // eslint-disable-line global-require,import/no-dynamic-require
-  }
-}
-
-/* eslint-disable no-restricted-syntax */
-function checkEnvs() {
-  for (const envVar of envVars) {
-    if (envVar.name in process.env) {
-      enabledModules = lodash.union(enabledModules, envVar.module);
-    }
-  }
-  const requiredModules = lodash.flatten(lodash.map(lodash.filter(envVars, x => x.required), x => x.module));
-  enabledModules = lodash.union(enabledModules, requiredModules);
-
-  let checkVars = [];
-  for (const c of enabledModules) {
-    const temp = lodash.map(lodash.filter(envVars, x => lodash.includes(x.module, c)), x => x.name);
-    checkVars = lodash.union(checkVars, temp);
-  }
-
-  const notFoundEnvs = [];
-  for (const e of checkVars) {
-    if (!(e in process.env)) {
-      notFoundEnvs.push(e);
-    }
-  }
-
-    // ???
-    // const preNotFoundEnvs = lodash.cloneDeep(notFoundEnvs);
-    /*
-    const preNotFoundEnvs = lodash.filter(notFoundEnvs, (x) => {
-        const fbMissed = lodash.includes(lodash.get(lodash.find(envVars, { name: x }), 'module'), 'fb');
-        const smoochKeys = lodash.map(lodash.filter(envVars, { module: ['smooch'] }), 'name');
-        const smoochExists = lodash.intersection(smoochKeys, Object.keys(process.env));
-        console.log('fbMissed: '); console.log(fbMissed);
-        console.log('Smooch exists:'); console.log(smoochExists);
-
-        if ((fbMissed) && (smoochKeys.length === smoochExists.length)) {
-            console.log('FB replaced by SMOOCH');
-            return false;
-        } else {
-            return true;
-        }
-    });
-    notFoundEnvs = lodash.cloneDeep(preNotFoundEnvs);
-    //
-    */
-
-  if (notFoundEnvs.length > 0) {
-    throw new Error(`Not found env variables: ${notFoundEnvs.join(',')}`);
-  }
-}
-/* eslint-enable no-restricted-syntax */
-
 class BotStack {
 
   constructor(botName = 'default bot') {
     this.botName = botName;
     this.server = restify.createServer();
-
-    checkConfig();
-    checkEnvs();
-
-    if ('subscribeTo' in conf) {
-      this.subscriber = require('./redis'); // eslint-disable-line global-require
-      this.subscriber.on('message', (channel, message) => {
-        this.subscription(message);
-      });
-      this.subscriber.subscribe(conf.subscribeTo);
-      log.debug('Subscribed to Redis channel', {
-        module: 'botstack:constructor',
-        channel: conf.subscribeTo
-      });
-    }
-
-    if ('BOTSTACK_STATIC' in process.env) {
-      if (!('BOTSTACK_URL' in process.env)) {
-        throw new Error('BOTSTACK_URL not found');
-      }
-      this.server.get(/\/public\/?.*/, restify.serveStatic({
-        directory: process.env.BOTSTACK_STATIC
-      }));
-    }
-
-    this.server.use(restify.queryParser());
-    this.server.use(restify.bodyParser());
-
-    this.events = BotStackEmitterInit;
-    this.state = state;
 
         // utils
     this.fb = fb;
@@ -144,33 +39,15 @@ class BotStack {
     this.s3 = s3;
     this.log = log;
 
-    if (Object.keys(conf).length === 0) {
-      log.debug('Started with default config (no configuration file found)', { module: 'botstack:constructor' });
-    } else {
-      log.debug('Custom config file loaded', { module: 'botstack:constructor' });
-    }
+    settings.parseConfig(this);
+    environments.checkEnvironmentVariables();
+    environments.processEnvironmentVariables(this);
 
-    if ('getStartedButtonText' in conf) {
-      this.fb.getStartedButton(conf.getStartedButtonText).then((x) => {
-        log.debug('Started button done', { module: 'botstack:constructor', result: x.result });
-      });
-    } else {
-      this.fb.getStartedButton().then((x) => {
-        log.debug('Started button done', { module: 'botstack:constructor', result: x.result });
-      });
-    }
+    this.server.use(restify.queryParser());
+    this.server.use(restify.bodyParser());
 
-    if ('persistentMenu' in conf) {
-      this.fb.persistentMenu(conf.persistentMenu).then((x) => {
-        log.debug('Persistent menu done', { module: 'botstack:constructor', result: x.result });
-      });
-    }
-
-    if ('welcomeText' in conf) {
-      this.fb.greetingText(conf.welcomeText).then((x) => {
-        log.debug('Welcome text done', { module: 'botstack:constructor', result: x.result });
-      });
-    }
+    this.events = BotStackEmitterInit;
+    this.state = state;
 
     this.server.get('/', (req, res, next) => {
       res.send('Nothing to see here...');

@@ -34,8 +34,8 @@ async function processMessagesFromApiAi(apiaiResponse, senderID, dontSend = fals
       message,
       messageType: message.type
     });
-    if(useOnlyFacebookResponse) {
-      if(!(lodash.get(message, 'platform') === 'facebook')) {
+    if (useOnlyFacebookResponse) {
+      if (!(lodash.get(message, 'platform') === 'facebook')) {
         continue;
       }
     }

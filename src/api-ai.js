@@ -5,8 +5,17 @@ const rp = require('request-promise');
 const sessionStore = require('./session')();
 const log = require('./log');
 
-const APIAI_ACCESS_TOKEN = process.env.APIAI_ACCESS_TOKEN;
-const apiAiService = apiai(APIAI_ACCESS_TOKEN);
+let instance = null;
+
+function getApiAiInstance() {
+  if (!instance) {
+    if (!lodash.has(process.env, 'APIAI_ACCESS_TOKEN')) {
+      throw new Error('APIAI_ACCESS_TOKEN environment variable cannot be empty');
+    }
+    instance = apiai(process.env.APIAI_ACCESS_TOKEN);
+  }
+  return instance;
+}
 
 async function backchatApiAiSync(response) {
   if (process.env.BACKCHAT_APIAI_SYNC_URL) {
@@ -146,6 +155,7 @@ async function processEvent(eventName, senderID) {
     sessionId: sessionID
   });
 
+  const apiAiService = getApiAiInstance();
   const apiAiRequest = apiAiService.eventRequest({
     name: eventName
   }, {
@@ -167,6 +177,7 @@ async function processTextMessage(message, senderID) {
     sessionId: sessionID
   });
 
+  const apiAiService = getApiAiInstance();
   const apiAiRequest = apiAiService.textRequest(message, {
     sessionId: sessionID
   });

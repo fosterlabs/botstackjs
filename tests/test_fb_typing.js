@@ -13,7 +13,6 @@ chai.use(chaiAsPromised);
 const assert = chai.assert;
 
 describe('Testing FB typing', () => {
-
   it('fb typing on', async () => {
     let rpData = null;
 

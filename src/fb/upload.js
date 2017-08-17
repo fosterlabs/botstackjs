@@ -2,7 +2,6 @@ const rp = require('request-promise');
 const log = require('../log');
 
 async function attachmentUpload(attachmentURL, attachmentType = 'video') {
-
   const msg = {
     message: {
       attachment: {

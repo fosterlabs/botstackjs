@@ -13,7 +13,6 @@ chai.use(chaiAsPromised);
 const assert = chai.assert;
 
 describe('Testing FB settings', () => {
-
   it('testing setThreadSettings', async () => {
     let rpData = null;
 
@@ -96,7 +95,7 @@ describe('Testing FB settings', () => {
     const fbSet = require(rewiremock.resolve('../src/fb/settings'));
     await fbSet.persistentMenu([
       { type: 'postback', title: 'Yes', payload: 'Yes' },
-      { type: 'postback', title: 'No', payload: 'No'}
+      { type: 'postback', title: 'No', payload: 'No' }
     ]);
 
     rewiremock.disable();
