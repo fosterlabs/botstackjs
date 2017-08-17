@@ -26,12 +26,10 @@ describe('Testing BotStack class', () => {
   });
 
   it('Class init test', (done) => {
-    rewiremock('request-promise').with(async (data) => {
-      return {
-        statusCode: 200,
-        body: lodash.get(data, 'json')
-      };
-    });
+    rewiremock('request-promise').with(async data => ({
+      statusCode: 200,
+      body: lodash.get(data, 'json')
+    }));
     rewiremock('../fixtures/apiai/text_response.json').callThought();
     rewiremock.enable();
     rewiremock.isolation();
@@ -51,12 +49,10 @@ describe('Testing BotStack class', () => {
   });
 
   it('Init test with env vars', (done) => {
-    rewiremock('request-promise').with(async (data) => {
-      return {
-        statusCode: 200,
-        body: lodash.get(data, 'json')
-      };
-    });
+    rewiremock('request-promise').with(async data => ({
+      statusCode: 200,
+      body: lodash.get(data, 'json')
+    }));
     rewiremock('../fixtures/apiai/text_response.json').callThought();
     rewiremock.enable();
     rewiremock.isolation();
@@ -79,5 +75,4 @@ describe('Testing BotStack class', () => {
     rewiremock.disable();
     rewiremock.clear();
   });
-
 });
