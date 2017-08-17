@@ -8,7 +8,7 @@ async function setMessengerProfileData(data) {
     qs: {
       access_token: process.env.FB_PAGE_ACCESS_TOKEN
     },
-    resolveWithFullResponse:  true,
+    resolveWithFullResponse: true,
     method: 'POST',
     json: data
   };
@@ -31,14 +31,14 @@ async function setMessengerProfileData(data) {
     });
     throw e;
   }
-};
+}
 
-async function setPersistentMenuViaProfile(data = []) {
+async function setPersistentMenuViaProfile(initData = []) {
   log.debug('Sending persistent menu', {
     module: 'botstack:fb'
   });
   const data = {
-    persistent_menu: lodash.deepClone(data)
+    persistent_menu: lodash.cloneDeep(initData)
   };
   return setMessengerProfileData(data);
 }
