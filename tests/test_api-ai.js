@@ -55,13 +55,15 @@ describe('Testing API.AI', () => {
   });
 
   it('Test processEvent with eventRequest', async () => {
-    revert = apiai.__set__('apiAiService.eventRequest', () => {
-      const testEmitter = new TestEmitter();
-      setTimeout(() => {
-        testEmitter.emit('response', demoResponse);
-      }, 30);
-      return testEmitter;
-    });
+    revert = apiai.__set__('getApiAiInstance', () => ({
+      eventRequest: () => {
+        const testEmitter = new TestEmitter();
+        setTimeout(() => {
+          testEmitter.emit('response', demoResponse);
+        }, 30);
+        return testEmitter;
+      }
+    }));
     const response = await apiai.processEvent('demo', 'test_sender_id');
     assert.isOk(lodash.get(response, 'messages'));
     assert.isTrue(lodash.get(lodash.find(response.messages, 'speech'), 'speech') === 'Hello ?');
@@ -69,25 +71,28 @@ describe('Testing API.AI', () => {
 
   it('Test processEvent with eventRequest error', async () => {
     const error = new Error('Ooops!');
-    revert = apiai.__set__('apiAiService.eventRequest', () => {
-      const testEmitter = new TestEmitter();
-      setTimeout(() => {
-        testEmitter.emit('error', error);
-      }, 30);
-      revert();
-      return testEmitter;
-    });
+    revert = apiai.__set__('getApiAiInstance', () => ({
+      eventRequest: () => {
+        const testEmitter = new TestEmitter();
+        setTimeout(() => {
+          testEmitter.emit('error', error);
+        }, 30);
+        return testEmitter;
+      }
+    }));
     return assert.isRejected(apiai.processEvent('demo', 'test_sender_id'), Error, 'Ooops!');
   });
 
   it('Test processTextMessage with eventRequest', async () => {
-    revert = apiai.__set__('apiAiService.textRequest', () => {
-      const testEmitter = new TestEmitter();
-      setTimeout(() => {
-        testEmitter.emit('response', demoResponse);
-      }, 30);
-      return testEmitter;
-    });
+    revert = apiai.__set__('getApiAiInstance', () => ({
+      textRequest: () => {
+        const testEmitter = new TestEmitter();
+        setTimeout(() => {
+          testEmitter.emit('response', demoResponse);
+        }, 30);
+        return testEmitter;
+      }
+    }));
     const response = await apiai.processTextMessage('demo', 'test_sender_id');
     assert.isOk(lodash.get(response, 'messages'));
     assert.isTrue(lodash.get(lodash.find(response.messages, 'speech'), 'speech') === 'Hello ?');
@@ -95,14 +100,15 @@ describe('Testing API.AI', () => {
 
   it('Test processTextMessage with eventRequest error', async () => {
     const error = new Error('Ooops!');
-    revert = apiai.__set__('apiAiService.textRequest', () => {
-      const testEmitter = new TestEmitter();
-      setTimeout(() => {
-        testEmitter.emit('error', error);
-      }, 30);
-      revert();
-      return testEmitter;
-    });
+    revert = apiai.__set__('getApiAiInstance', () => ({
+      textRequest: () => {
+        const testEmitter = new TestEmitter();
+        setTimeout(() => {
+          testEmitter.emit('error', error);
+        }, 30);
+        return testEmitter;
+      }
+    }));
     return assert.isRejected(apiai.processTextMessage('demo', 'test_sender_id'), Error, 'Ooops!');
   });
 });

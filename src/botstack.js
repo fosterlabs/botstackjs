@@ -33,6 +33,12 @@ class BotStack {
     this.botName = botName;
     this.server = restify.createServer();
 
+        // utils
+    this.fb = fb;
+    this.apiai = apiai;
+    this.s3 = s3;
+    this.log = log;
+
     settings.parseConfig(this);
     environments.checkEnvironmentVariables();
     environments.processEnvironmentVariables(this);
@@ -42,12 +48,6 @@ class BotStack {
 
     this.events = BotStackEmitterInit;
     this.state = state;
-
-        // utils
-    this.fb = fb;
-    this.apiai = apiai;
-    this.s3 = s3;
-    this.log = log;
 
     this.server.get('/', (req, res, next) => {
       res.send('Nothing to see here...');

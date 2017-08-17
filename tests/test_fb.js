@@ -15,6 +15,10 @@ chai.use(chaiAsPromised);
 const assert = chai.assert;
 const expect = chai.expect;
 
+process.on('unhandledRejection', (reason, p) => {
+  console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
+});
+
 describe('Testing FB', () => {
   it('Testing text response (type = 0)', async () => {
     const apiAiTextResponse = require('../fixtures/apiai/text_response.json');
