@@ -17,13 +17,16 @@ function getApiAiInstance() {
   return instance;
 }
 
-async function backchatApiAiSync(response) {
+async function backchatApiAiSync(response, senderID) {
   if (process.env.BACKCHAT_APIAI_SYNC_URL) {
     const reqData = {
       url: process.env.BACKCHAT_APIAI_SYNC_URL,
       resolveWithFullResponse: true,
       method: 'POST',
-      json: response
+      json: {
+        sender_id: senderID,
+        response
+      }
     };
     try {
       const result = await rp(reqData);
@@ -96,40 +99,8 @@ function getApiAiResponse({ apiAiRequest, senderID, eventName, message, sessionI
 
       log.debug('API.AI responded', logParams);
 
-      backchatApiAiSync(response);
+      backchatApiAiSync(response, senderID);
       resolve(processResponse(response, senderID));
-
-      /*
-      if (lodash.get(response, 'result')) {
-        log.debug('API.AI result', {
-          module: 'botstack:api-ai',
-          senderId: senderID,
-          result: response.result
-        });
-
-        const responseText = lodash.get(response.result, 'fulfillment.speech');
-        const responseData = lodash.get(response.result, 'fulfillment.data');
-        const messages = lodash.get(response.result, 'fulfillment.messages');
-        const action = lodash.get(response.result, 'action');
-
-        if (lodash.get(responseData, 'facebook')) {
-          // FIXME: implement this type of messages
-          log.debug('Response as formatted message', {
-            module: 'botstack:api-ai',
-            senderId: senderID
-          });
-          resolve(null);
-        } else if (!lodash.isEmpty(messages)) {
-          const returnData = {
-            messages,
-            response
-          };
-          resolve(returnData);
-        }
-      } else {
-        resolve(null);
-      }
-      */
     });
 
     apiAiRequest.on('error', (error) => {
