@@ -147,7 +147,7 @@ describe('Testing FB', () => {
     assert.equal(lodash.get(data, '[0].attachment.payload.elements[0].buttons', []).length, 3);
     assert.equal(lodash.get(data, '[0].attachment.payload.elements[0].buttons[0].type'), 'web_url');
     assert.equal(lodash.get(data, '[0].attachment.payload.elements[0].buttons[0].title'), 'Button 1');
-    assert.equal(lodash.get(data, '[0].attachment.payload.elements[0].buttons[0].payload'), 'http://example.com/button.jpg');
+    assert.equal(lodash.get(data, '[0].attachment.payload.elements[0].buttons[0].url'), 'http://example.com/button.jpg');
   });
 
   it('Testing quick replies message (type = 2)', async () => {
