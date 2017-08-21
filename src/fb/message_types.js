@@ -10,7 +10,7 @@ function structuredMessage(message) {
         buttons.push({
           type: 'web_url',
           title: button.text,
-          payload: button.postback
+          url: button.postback
         });
       } else {
         buttons.push({
