@@ -1,4 +1,4 @@
-const BotStack = require('../../../index.js');
+const BotStack = require('botstackjs');
 
 class DemoApp extends BotStack {}
 
