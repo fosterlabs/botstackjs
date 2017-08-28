@@ -242,4 +242,33 @@ describe('Testing FB', () => {
     assert.equal(lodash.get(data, '[0].attachment.type'), 'image');
     assert.equal(lodash.get(data, '[0].attachment.payload.url'), 'http://example.com/image.jpg');
   });
+
+  it('Testing with empty response', async () => {
+    const apiAiTextResponse = require('../fixtures/apiai/test_response_empty.json');
+    const data = [];
+
+    const apiai = require('../src/api-ai');
+    const apiAiResult = apiai.processResponse(apiAiTextResponse, '1234567890');
+
+    rewiremock('./reply').callThought().with({
+      reply: async (message, senderId) => {
+        data.push(message);
+        return true;
+      }
+    });
+
+    rewiremock.enable();
+    rewiremock.isolation();
+
+    const fb = require(rewiremock.resolve('../src/fb'));
+
+    const senderID = '1234567890';
+    const res = await fb.processMessagesFromApiAi(apiAiResult, senderID);
+
+    rewiremock.disable();
+    rewiremock.clear();
+
+    assert.equal(lodash.get(apiAiResult, 'messages').length, 0);
+    assert.equal(!lodash.isEmpty(lodash.get(apiAiResult, 'response.result.action')), true);
+  });
 });
