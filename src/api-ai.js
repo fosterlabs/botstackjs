@@ -65,14 +65,12 @@ function processResponse(response, senderID) {
         senderId: senderID
       });
       return null;
-    } else if (!lodash.isEmpty(messages)) {
-      const returnData = {
-        messages,
-        response
-      };
-      return returnData;
     }
-    return null;
+    const returnData = {
+      messages,
+      response
+    };
+    return returnData;
   }
   return null;
 }
