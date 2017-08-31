@@ -13,6 +13,47 @@ That's why we've open sourced our Facebook Messenger node.js code base so you ca
 * `npm install botstack`
 * set API keys in env_tmpl
 
+## Example
+Create `index.js` file with this content:
+
+```js
+const BotStack = require('botstack');
+
+class ExampleBot extends BotStack {};
+
+const bot = new ExampleBot('example-bot');
+bot.startServer();
+```
+Before the start of the bot, we need to set a few environment variables:
+```bash
+FB_PAGE_ACCESS_TOKEN, FB_VERIFY_TOKEN, APIAI_ACCESS_TOKEN
+```
+If you don't want to set environment variables explicitly, you can use the `dotenv` library.
+
+Example:
+
+1. Create `.env` file in the root folder of your project
+Example:
+```bash
+FB_PAGE_ACCESS_TOKEN=
+FB_VERIFY_TOKEN=
+APIAI_ACCESS_TOKEN=
+```
+2. Create JS file:
+```js
+require('dotenv').config();
+class ExampleBot extends BotStack {};
+
+const bot = new ExampleBot('example-bot');
+bot.startServer();
+```
+
+3. Run
+```bash
+node index.js
+```
+Other examples you can find in the `examples` folder of this repository.
+
 ## Features
 * Emjoi Support 
 * Configurable 'Greeting, Get Started Button & Action Menu'
