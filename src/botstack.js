@@ -1,6 +1,6 @@
+const _ = require('lodash');
 const fs = require('fs');
 const path = require('path');
-const lodash = require('lodash');
 const restify = require('restify');
 const rp = require('request-promise');
 
@@ -158,7 +158,7 @@ class BotStack {
     return async function (req, res, next) { // eslint-disable-line func-names, no-unused-vars
       res.end();
       /* eslint-disable no-restricted-syntax, no-continue, no-await-in-loop */
-      for (const msg of lodash.get(req.body, 'messages', [])) {
+      for (const msg of _.get(req.body, 'messages', [])) {
         // message schema
         // https://docs.smooch.io/rest/?javascript#schema44
         if (msg.role !== 'appUser') {
@@ -168,8 +168,8 @@ class BotStack {
           module: 'botstack:smoochWebhook',
           message: msg
         });
-        const text = lodash.get(msg, 'text');
-        const authorID = lodash.get(msg, 'authorId');
+        const text = _.get(msg, 'text');
+        const authorID = _.get(msg, 'authorId');
         let apiAiResponse = null;
         let result = null;
         try {
@@ -224,12 +224,20 @@ class BotStack {
     return async function (req, res, next) { // eslint-disable-line no-unused-vars
       res.end();
       await self._syncFbMessageToBackChat(req); // eslint-disable-line no-underscore-dangle
-      const entries = req.body.entry;
+      const entries = _.get(req, 'body.entry', []);
       for (const entry of entries) {
-        const messages = entry.messaging;
+        const messages = _.get(entry, 'messaging', []);
         for (const message of messages) {
-          const senderID = message.sender.id;
-          const isEcho = !!lodash.get(message, 'message.is_echo');
+          // The sender object is not included for messaging_optins events triggered by the checkbox plugin.
+          // https://developers.facebook.com/docs/messenger-platform/reference/webhook-events/messaging_optins
+          let isMessagingOptins = false;
+          let recipientUserRef = null;
+          const senderID = _.get(message, 'sender.id');
+          if ((!senderID) && (_.has(message, 'optin.user_ref'))) {
+            isMessagingOptins = true;
+            recipientUserRef = _.get(message, 'optin.user_ref');
+          }
+          const isEcho = !!_.get(message, 'message.is_echo');
           if (isEcho) {
             continue; // eslint-disable-line no-continue
           }
@@ -239,9 +247,9 @@ class BotStack {
           });
           const isNewSession = await sessionStore.checkExists(senderID);
           const isPostbackMessage = !!message.postback;
-          const isQuickReplyPayload = !!lodash.get(message, 'message.quick_reply.payload');
-          const isTextMessage = !!(!isQuickReplyPayload && lodash.get(message, 'message.text'));
-          const isGeoLocationMessage = !!lodash.get(message, 'message.attachments[0].payload.coordinates');
+          const isQuickReplyPayload = !!_.get(message, 'message.quick_reply.payload');
+          const isTextMessage = !!(!isQuickReplyPayload && _.get(message, 'message.text'));
+          const isGeoLocationMessage = !!_.get(message, 'message.attachments[0].payload.coordinates');
           log.debug('Detect kind of message', {
             module: 'botstack:webhookPost',
             senderID,
@@ -249,7 +257,8 @@ class BotStack {
             isPostbackMessage,
             isQuickReplyPayload,
             isTextMessage,
-            isGeoLocationMessage
+            isGeoLocationMessage,
+            isMessagingOptins
           });
           await sessionStore.set(senderID);
           if (isQuickReplyPayload) {
@@ -268,6 +277,8 @@ class BotStack {
             } else {
               await self.postbackMessage(message, senderID);
             }
+          } else if (isMessagingOptins) {
+            await self.messagingOptins(message, recipientUserRef);
           } else {
             await self.fallback(message, senderID);
           }
@@ -346,7 +357,7 @@ class BotStack {
   }
 
   async quickReplyPayload(message, senderID) {
-    const text = lodash.get(message, 'message.quick_reply.payload');
+    const text = _.get(message, 'message.quick_reply.payload');
     this.log.debug('Process quick reply payload', {
       module: 'botstack: quickReplyPayload',
       senderId: senderID,
@@ -387,6 +398,55 @@ class BotStack {
       senderId: senderID,
       message
     });
+  }
+
+  async messagingOptins(message, recipientUserRef) {
+    // on first request we have:
+    // {
+    //  "recipient":{
+    //    "id":"<PAGE_ID>"
+    //   },
+    //   "timestamp":<UNIX_TIMESTAMP>,
+    //   "optin":{
+    //     "ref":"<PASS_THROUGH_PARAM>",
+    //     "user_ref":"<UNIQUE_REF_PARAM>"
+    //   }
+    // }
+
+    // next send message to user using user_ref param
+    // curl -X POST -H "Content-Type: application/json" -d '{
+    // "recipient": {
+    //   "user_ref":"<UNIQUE_REF_PARAM>"
+    //  },
+    // "message": {
+    //  "text":"hello, world!"
+    // }
+    // }' "https://graph.facebook.com/v2.6/me/messages?access_token=<PAGE_ACCESS_TOKEN>"
+
+    // after got result:
+    // {
+    //  "message_id": "mid.1456970487936:c34767dfe57ee6e339"
+    // }
+
+    // let's save this user_ref for future use...
+    //
+    this.log.debug('Process message opt-in payload', {
+      module: 'botstack:messagingOptins',
+      recipientUserRef
+    });
+    if (BotStackCheck('messagingOptins')) {
+      BotStackEvents.emit('messagingOptins', {
+        recipientUserRef,
+        message
+      });
+      return;
+    }
+    this.log.debug('Sending to Dialogflow', {
+      module: 'botstack:messagingOptins',
+      recipientUserRef,
+      message
+    });
+    await fb.reply(fb.textMessage('Hello!'), recipientUserRef, { params: { use_user_ref: true }});
   }
 
   startServer() {
