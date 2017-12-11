@@ -5,10 +5,6 @@ const dashbot = require('dashbot')(process.env.DASHBOT_API_KEY).facebook;
 const sessionStore = require('./session.js')();
 const log = require('./log.js');
 
-function processWelcomeMessage(messageText, senderID) {
-
-}
-
 module.exports = (req, res, next) => {
   console.log(' ');
   console.log('===Received a message from FB');
@@ -53,4 +49,3 @@ module.exports = (req, res, next) => {
   console.log('===');
   return next();
 };
-
