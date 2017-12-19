@@ -1,4 +1,4 @@
-const lodash = require('lodash');
+const _ = require('lodash');
 const rewiremock = require('rewiremock').default;
 const { addPlugin, plugins } = require('rewiremock');
 
@@ -21,33 +21,28 @@ describe('Testing FB reply', () => {
       return null;
     });
 
-    rewiremock('../multiconf').with(() => {
-      return {
-        getEnv: (envName) => {
-          return "123";
-        },
-        getFacebookPageTokenByPageID: (envName) => {
-          return "123";
-        }
-      };
-    });
+    rewiremock('../multiconf').with(() => ({
+      getEnv: envName => '123',
+      getFacebookPageTokenByPageID: envName => '123'
+    }));
 
     rewiremock.enable();
     rewiremock.isolation();
 
-    const fb = require(rewiremock.resolve('../src/fb/reply'));
+    const fbInstance = require(rewiremock.resolve('../src/fb/reply'));
     const fbMsg = require(rewiremock.resolve('../src/fb/message_types'));
     const senderID = '1234567890';
+    let fb = fbInstance(null);
     await fb.reply(fbMsg.textMessage('hello'), senderID);
 
     rewiremock.disable();
     rewiremock.clear();
 
-    assert.equal(lodash.get(rpData, 'method'), 'POST');
-    assert.equal(lodash.get(rpData, 'json.recipient.id'), senderID);
-    assert.equal(lodash.get(rpData, 'json.message.text'), 'hello');
-    assert.isOk(lodash.has(rpData, 'qs.access_token'));
-    assert.isOk(lodash.has(rpData, 'url'));
-    assert.equal(lodash.get(rpData, 'qs.access_token'), '123');
+    assert.equal(_.get(rpData, 'method'), 'POST');
+    assert.equal(_.get(rpData, 'json.recipient.id'), senderID);
+    assert.equal(_.get(rpData, 'json.message.text'), 'hello');
+    assert.isOk(_.has(rpData, 'qs.access_token'));
+    assert.isOk(_.has(rpData, 'url'));
+    assert.equal(_.get(rpData, 'qs.access_token'), '123');
   });
 });

@@ -1,4 +1,4 @@
-const lodash = require('lodash');
+const _ = require('lodash');
 const rewire = require('rewire');
 
 const chai = require('chai');
@@ -18,7 +18,7 @@ class TestEmitter extends EventEmitter {
 }
 
 process.env.APIAI_ACCESS_TOKEN = 'demo_access_token';
-const apiai = rewire('../src/api-ai');
+let dialogflow = rewire('../src/dialogflow');
 
 const demoResponse = {
   result: {
@@ -32,6 +32,9 @@ const demoResponse = {
     }
   }
 };
+
+let botstackFakeInstance = {};
+_.set(botstackFakeInstance, 'log.debug', () => {});
 
 describe('Testing API.AI', () => {
   let revert = null;
@@ -48,14 +51,14 @@ describe('Testing API.AI', () => {
   });
 
   it('Test processEvent using getApiAiResponse', async () => {
-    revert = apiai.__set__('getApiAiResponse', async () => demoResponse);
-
-    const response = await apiai.processEvent('demo', 'test_sender_id');
-    assert.isOk(lodash.get(response, 'result.fulfillment.messages'));
+    revert = dialogflow.__set__('getDialogflowResponse', async () => demoResponse);
+    let dialogflowInstance = dialogflow(botstackFakeInstance);
+    const response = await dialogflowInstance.processEvent('demo', 'test_sender_id');
+    assert.isOk(_.get(response, 'result.fulfillment.messages'));
   });
 
   it('Test processEvent with eventRequest', async () => {
-    revert = apiai.__set__('getApiAiInstance', () => ({
+    revert = dialogflow.__set__('getDialogflowInstance', () => ({
       eventRequest: () => {
         const testEmitter = new TestEmitter();
         setTimeout(() => {
@@ -64,14 +67,15 @@ describe('Testing API.AI', () => {
         return testEmitter;
       }
     }));
-    const response = await apiai.processEvent('demo', 'test_sender_id');
-    assert.isOk(lodash.get(response, 'messages'));
-    assert.isTrue(lodash.get(lodash.find(response.messages, 'speech'), 'speech') === 'Hello ?');
+    let dialogflowInstance = dialogflow(botstackFakeInstance);
+    const response = await dialogflowInstance.processEvent('demo', 'test_sender_id');
+    assert.isOk(_.get(response, 'messages'));
+    assert.isTrue(_.get(_.find(response.messages, 'speech'), 'speech') === 'Hello ?');
   });
 
   it('Test processEvent with eventRequest error', async () => {
     const error = new Error('Ooops!');
-    revert = apiai.__set__('getApiAiInstance', () => ({
+    revert = dialogflow.__set__('getDialogflowInstance', () => ({
       eventRequest: () => {
         const testEmitter = new TestEmitter();
         setTimeout(() => {
@@ -80,11 +84,12 @@ describe('Testing API.AI', () => {
         return testEmitter;
       }
     }));
-    return assert.isRejected(apiai.processEvent('demo', 'test_sender_id'), Error, 'Ooops!');
+    let dialogflowInstance = dialogflow(botstackFakeInstance);
+    return assert.isRejected(dialogflowInstance.processEvent('demo', 'test_sender_id'), Error, 'Ooops!');
   });
 
   it('Test processTextMessage with eventRequest', async () => {
-    revert = apiai.__set__('getApiAiInstance', () => ({
+    revert = dialogflow.__set__('getDialogflowInstance', () => ({
       textRequest: () => {
         const testEmitter = new TestEmitter();
         setTimeout(() => {
@@ -93,14 +98,15 @@ describe('Testing API.AI', () => {
         return testEmitter;
       }
     }));
-    const response = await apiai.processTextMessage('demo', 'test_sender_id');
-    assert.isOk(lodash.get(response, 'messages'));
-    assert.isTrue(lodash.get(lodash.find(response.messages, 'speech'), 'speech') === 'Hello ?');
+    let dialogflowInstance = dialogflow(botstackFakeInstance);
+    const response = await dialogflowInstance.processTextMessage('demo', 'test_sender_id');
+    assert.isOk(_.get(response, 'messages'));
+    assert.isTrue(_.get(_.find(response.messages, 'speech'), 'speech') === 'Hello ?');
   });
 
   it('Test processTextMessage with eventRequest error', async () => {
     const error = new Error('Ooops!');
-    revert = apiai.__set__('getApiAiInstance', () => ({
+    revert = dialogflow.__set__('getDialogflowInstance', () => ({
       textRequest: () => {
         const testEmitter = new TestEmitter();
         setTimeout(() => {
@@ -109,6 +115,7 @@ describe('Testing API.AI', () => {
         return testEmitter;
       }
     }));
-    return assert.isRejected(apiai.processTextMessage('demo', 'test_sender_id'), Error, 'Ooops!');
+    let dialogflowInstance = dialogflow(botstackFakeInstance);
+    return assert.isRejected(dialogflowInstance.processTextMessage('demo', 'test_sender_id'), Error, 'Ooops!');
   });
 });

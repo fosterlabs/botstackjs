@@ -1,4 +1,4 @@
-const lodash = require('lodash');
+const _ = require('lodash');
 const rewiremock = require('rewiremock').default;
 const { addPlugin, plugins } = require('rewiremock');
 
@@ -23,7 +23,8 @@ describe('Testing FB settings', () => {
 
     rewiremock.enable();
 
-    const fbSet = require(rewiremock.resolve('../src/fb/settings'));
+    const fbSetInstance = require(rewiremock.resolve('../src/fb/settings'));
+    const fbSet = fbSetInstance(null);
     await fbSet.setThreadSettings({});
 
     rewiremock.disable();
@@ -31,8 +32,8 @@ describe('Testing FB settings', () => {
 
     const constants = require('../src/common/constants');
 
-    assert.equal(lodash.get(rpData, 'url'), constants.getFacebookGraphURL('/me/thread_settings'));
-    assert.equal(lodash.get(rpData, 'method'), 'POST');
+    assert.equal(_.get(rpData, 'url'), constants.getFacebookGraphURL('/me/thread_settings'));
+    assert.equal(_.get(rpData, 'method'), 'POST');
   });
 
   it('testing greetingText', async () => {
@@ -45,16 +46,17 @@ describe('Testing FB settings', () => {
 
     rewiremock.enable();
 
-    const fbSet = require(rewiremock.resolve('../src/fb/settings'));
+    const fbSetInstance = require(rewiremock.resolve('../src/fb/settings'));
+    const fbSet = fbSetInstance(null);
     await fbSet.greetingText('hello');
 
     rewiremock.disable();
     rewiremock.clear();
 
-    assert.equal(lodash.get(rpData, 'url'), 'https://graph.facebook.com/v2.9/me/thread_settings');
-    assert.equal(lodash.get(rpData, 'method'), 'POST');
-    assert.equal(lodash.get(rpData, 'json.setting_type'), 'greeting');
-    assert.equal(lodash.get(rpData, 'json.greeting.text'), 'hello');
+    assert.equal(_.get(rpData, 'url'), 'https://graph.facebook.com/v2.9/me/thread_settings');
+    assert.equal(_.get(rpData, 'method'), 'POST');
+    assert.equal(_.get(rpData, 'json.setting_type'), 'greeting');
+    assert.equal(_.get(rpData, 'json.greeting.text'), 'hello');
   });
 
   it('testing getStartedButton', async () => {
@@ -67,17 +69,18 @@ describe('Testing FB settings', () => {
 
     rewiremock.enable();
 
-    const fbSet = require(rewiremock.resolve('../src/fb/settings'));
+    const fbSetInstance = require(rewiremock.resolve('../src/fb/settings'));
+    const fbSet = fbSetInstance(null);
     await fbSet.getStartedButton('hello');
 
     rewiremock.disable();
     rewiremock.clear();
 
-    assert.equal(lodash.get(rpData, 'url'), 'https://graph.facebook.com/v2.9/me/thread_settings');
-    assert.equal(lodash.get(rpData, 'method'), 'POST');
-    assert.equal(lodash.get(rpData, 'json.setting_type'), 'call_to_actions');
-    assert.equal(lodash.get(rpData, 'json.thread_state'), 'new_thread');
-    assert.equal(lodash.get(rpData, 'json.call_to_actions[0].payload'), 'hello');
+    assert.equal(_.get(rpData, 'url'), 'https://graph.facebook.com/v2.9/me/thread_settings');
+    assert.equal(_.get(rpData, 'method'), 'POST');
+    assert.equal(_.get(rpData, 'json.setting_type'), 'call_to_actions');
+    assert.equal(_.get(rpData, 'json.thread_state'), 'new_thread');
+    assert.equal(_.get(rpData, 'json.call_to_actions[0].payload'), 'hello');
   });
 
   it('testing persistentMenu', async () => {
@@ -90,7 +93,8 @@ describe('Testing FB settings', () => {
 
     rewiremock.enable();
 
-    const fbSet = require(rewiremock.resolve('../src/fb/settings'));
+    const fbSetInstance = require(rewiremock.resolve('../src/fb/settings'));
+    const fbSet = fbSetInstance(null);
     await fbSet.persistentMenu([
       { type: 'postback', title: 'Yes', payload: 'Yes' },
       { type: 'postback', title: 'No', payload: 'No' }
@@ -99,14 +103,14 @@ describe('Testing FB settings', () => {
     rewiremock.disable();
     rewiremock.clear();
 
-    assert.equal(lodash.get(rpData, 'url'), 'https://graph.facebook.com/v2.9/me/thread_settings');
-    assert.equal(lodash.get(rpData, 'method'), 'POST');
-    assert.equal(lodash.get(rpData, 'json.setting_type'), 'call_to_actions');
-    assert.equal(lodash.get(rpData, 'json.thread_state'), 'existing_thread');
-    assert.equal(lodash.get(rpData, 'json.call_to_actions', []).length, 2);
-    assert.equal(lodash.get(rpData, 'json.call_to_actions[0].type'), 'postback');
-    assert.equal(lodash.get(rpData, 'json.call_to_actions[0].title'), 'Yes');
-    assert.equal(lodash.get(rpData, 'json.call_to_actions[0].payload'), 'Yes');
+    assert.equal(_.get(rpData, 'url'), 'https://graph.facebook.com/v2.9/me/thread_settings');
+    assert.equal(_.get(rpData, 'method'), 'POST');
+    assert.equal(_.get(rpData, 'json.setting_type'), 'call_to_actions');
+    assert.equal(_.get(rpData, 'json.thread_state'), 'existing_thread');
+    assert.equal(_.get(rpData, 'json.call_to_actions', []).length, 2);
+    assert.equal(_.get(rpData, 'json.call_to_actions[0].type'), 'postback');
+    assert.equal(_.get(rpData, 'json.call_to_actions[0].title'), 'Yes');
+    assert.equal(_.get(rpData, 'json.call_to_actions[0].payload'), 'Yes');
   });
 
   it('testing deletePersistentMenu', async () => {
@@ -119,16 +123,17 @@ describe('Testing FB settings', () => {
 
     rewiremock.enable();
 
-    const fbSet = require(rewiremock.resolve('../src/fb/settings'));
+    const fbSetInstance = require(rewiremock.resolve('../src/fb/settings'));
+    const fbSet = fbSetInstance(null);
     await fbSet.deletePersistentMenu();
 
     rewiremock.disable();
     rewiremock.clear();
 
-    assert.equal(lodash.get(rpData, 'url'), 'https://graph.facebook.com/v2.9/me/thread_settings');
-    assert.equal(lodash.get(rpData, 'method'), 'DELETE');
-    assert.equal(lodash.get(rpData, 'json.setting_type'), 'call_to_actions');
-    assert.equal(lodash.get(rpData, 'json.thread_state'), 'existing_thread');
-    assert.equal(lodash.get(rpData, 'json.call_to_actions', []).length, 0);
+    assert.equal(_.get(rpData, 'url'), 'https://graph.facebook.com/v2.9/me/thread_settings');
+    assert.equal(_.get(rpData, 'method'), 'DELETE');
+    assert.equal(_.get(rpData, 'json.setting_type'), 'call_to_actions');
+    assert.equal(_.get(rpData, 'json.thread_state'), 'existing_thread');
+    assert.equal(_.get(rpData, 'json.call_to_actions', []).length, 0);
   });
 });

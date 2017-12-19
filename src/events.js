@@ -9,7 +9,7 @@ const botStackHandlers = null;
 function BotStackEmitterInit(handlers = {}) {
   if (Object.keys(handlers).length > 0) {
     for (const e in handlers) {
-      if (BotStackEvents.listenerCount(e) == 0) {
+      if (BotStackEvents.listenerCount(e) === 0) {
         BotStackEvents.on(e, handlers[e]);
       }
     }

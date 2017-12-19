@@ -1,4 +1,4 @@
-const lodash = require('lodash');
+const _ = require('lodash');
 const sinon = require('sinon');
 
 const rewiremock = require('rewiremock').default;
@@ -14,11 +14,14 @@ chai.use(chaiAsPromised);
 
 const assert = chai.assert;
 
+let botstackFakeInstance = {};
+_.set(botstackFakeInstance, 'log.debug', () => {});
+
 describe('Testing FB only', () => {
   let oldProcessEnv = null;
 
   beforeEach(() => {
-    oldProcessEnv = lodash.cloneDeep(process.env);
+    oldProcessEnv = _.cloneDeep(process.env);
     process.env.BOTSTACK_ONLY_FB_RESP = true;
   });
 
@@ -31,23 +34,30 @@ describe('Testing FB only', () => {
   it('testing fb only', async () => {
     const apiAiTextResponse = require('../fixtures/apiai/two_types_response.json');
     const data = [];
-    const apiai = require('../src/api-ai');
-    const apiAiResult = apiai.processResponse(apiAiTextResponse, '1234567890');
+    const dialogflowInstance = require('../src/dialogflow');
+    const dialogflow = dialogflowInstance(botstackFakeInstance);
+    const apiAiResult = dialogflow.processResponse(apiAiTextResponse, '1234567890');
 
-    rewiremock('./reply').callThought().with({
-      reply: async (message, senderId) => {
-        data.push(message);
-        return true;
-      }
+    rewiremock('./reply').with((botstackInstance) => {
+      return {
+        reply: async (message, senderId, {
+          messagingType = 'RESPONSE',
+          params = null,
+          pageId = null } = {}) => {
+            data.push(message);
+            return true;
+          }
+      };
     });
 
     rewiremock.enable();
-    rewiremock.isolation();
 
-    const fb = require(rewiremock.resolve('../src/fb'));
+    const fbInstance = require(rewiremock.resolve('../src/fb'));
+    const fb = fbInstance(botstackFakeInstance);
 
     const senderID = '1234567890';
-    const res = await fb.processMessagesFromApiAi(apiAiResult, senderID);
+    const pageID = '0';
+    const res = await fb.processMessagesFromApiAi(apiAiResult, senderID, pageID);
 
     rewiremock.disable();
     rewiremock.clear();

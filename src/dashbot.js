@@ -1,14 +1,20 @@
-const lodash = require('lodash');
 const proxy = require('proxy-method-missing');
+const dashbot = require('dashbot');
+const multiconf = require('./multiconf');
 
-let dashbot = null;
-if ('DASHBOT_API_KEY' in process.env) {
-  dashbot = require('dashbot')(process.env.DASHBOT_API_KEY);
-}
+module.exports = (botstackInstance) => {
+  const self = botstackInstance;
+  const env = multiconf(self);
+  let dashbotInstance = null;
 
-module.exports = function (provider) {
-  if (dashbot) {
-    return dashbot[provider];
+  async function getInstance(provider) {
+    const apiKey = await env.getEnv('DASHBOT_API_KEY');
+    dashbotInstance = dashbot(apiKey);
+    if (dashbotInstance) {
+      return dashbotInstance[provider];
+    }
+    return proxy({}, (method, ...args) => null);
   }
-  return proxy({}, (method, ...args) => null);
+
+  return { getInstance };
 };

@@ -13,36 +13,37 @@ const set = (key, value = {}) => {
   }
 };
 
-const setAsync = (key, value = {}) => new Promise((resolve, reject) => {
+async function setAsync(key, value = {}) {
   set(key, value);
-  resolve();
-});
+}
 
 const get = (key) => {
   const item = multiMap.get(key);
   if (!item) {
     return null;
-  } else {
-    return item;
   }
+  return item;
 };
 
-const getAsync = key => new Promise((resolve, reject) => {
-  resolve(get(key));
-});
+function dropAll() {
+  for (const key of multiMap.keys()) {
+    multiMap.delete(key);
+  }
+}
 
-const del = key => {
-  return multiMap.delete(key);
-};
+async function getAsync(key) {
+  return get(key);
+}
 
-const delAsync = key => new Promise((resolve, reject) => {
-  resolve(del(key));
-});
+const del = key => multiMap.delete(key);
+
+async function delAsync(key) {
+  return del(key);
+}
 
 const delByInternalKey = (key, internalKey) => {
   const oldValue = multiMap.get(key);
   if (!oldValue) {
-    reject("Internal key doesn't exists");
     throw new Error("Internal key doesn't exists");
   }
   delete oldValue[internalKey];
@@ -66,5 +67,6 @@ module.exports = {
   del,
   delAsync,
   delByInternalKey,
-  delByInternalKeyAsync
+  delByInternalKeyAsync,
+  dropAll
 };

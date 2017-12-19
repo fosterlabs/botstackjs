@@ -1,13 +1,17 @@
 const rp = require('request-promise');
 const log = require('../log');
 const constants = require('../common/constants');
-const env = require('../multiconf')();
+const multiconf = require('../multiconf');
 
-async function setThreadSettings(data, method = 'POST', { pageId=null}={}) {
+let self = null;
+
+async function setThreadSettings(data, method = 'POST', { pageId = null } = {}) {
+  const env = multiconf(self);
+  const FB_PAGE_ACCESS_TOKEN = await env.getFacebookPageTokenByPageID(pageId);
   const reqData = {
     url: constants.getFacebookGraphURL('/me/thread_settings'),
     qs: {
-      access_token: env.getFacebookPageTokenByPageID(pageId)
+      access_token: FB_PAGE_ACCESS_TOKEN
     },
     resolveWithFullResponse: true,
     method,
@@ -33,7 +37,7 @@ async function setThreadSettings(data, method = 'POST', { pageId=null}={}) {
   }
 }
 
-function greetingText(text) {
+async function greetingText(text) {
   log.debug('Sending greeting text', {
     module: 'botstack:fb'
   });
@@ -43,10 +47,11 @@ function greetingText(text) {
       text
     }
   };
-  return setThreadSettings(data);
+  const result = await setThreadSettings(data);
+  return result;
 }
 
-function getStartedButton(payload) {
+async function getStartedButton(payload) {
   payload = typeof (payload) !== 'undefined' ? payload : 'Get Started';
   log.debug('Sending started button', {
     module: 'botstack:fb'
@@ -55,17 +60,18 @@ function getStartedButton(payload) {
     setting_type: 'call_to_actions',
     thread_state: 'new_thread',
     call_to_actions: [
-            { payload }
+      { payload }
     ]
   };
-  return setThreadSettings(data);
+  const result = await setThreadSettings(data);
+  return result;
 }
 
 /*
-[{ type: "postback", title: "Yes", payload: "Yes" },
- { type: "postback", title: "Help", payload: "Help" }]
+  [{ type: "postback", title: "Yes", payload: "Yes" },
+  { type: "postback", title: "Help", payload: "Help" }]
 */
-function persistentMenu(call_to_actions) {
+async function persistentMenu(call_to_actions) {
   log.debug('Sending persistent menu settings', {
     module: 'botstack:fb'
   });
@@ -74,10 +80,11 @@ function persistentMenu(call_to_actions) {
     thread_state: 'existing_thread',
     call_to_actions
   };
-  return setThreadSettings(data);
+  const result = await setThreadSettings(data);
+  return result;
 }
 
-function deletePersistentMenu() {
+async function deletePersistentMenu() {
   log.debug('Delete persistent menu settings', {
     module: 'botstack:fb'
   });
@@ -85,13 +92,19 @@ function deletePersistentMenu() {
     setting_type: 'call_to_actions',
     thread_state: 'existing_thread'
   };
-  return setThreadSettings(data, 'DELETE');
+  const result = await setThreadSettings(data, 'DELETE');
+  return result;
 }
 
-module.exports = {
-  setThreadSettings,
-  greetingText,
-  getStartedButton,
-  persistentMenu,
-  deletePersistentMenu
+
+module.exports = (botstackInstance) => {
+  self = botstackInstance;
+
+  return {
+    setThreadSettings,
+    greetingText,
+    getStartedButton,
+    persistentMenu,
+    deletePersistentMenu
+  };
 };

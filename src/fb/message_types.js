@@ -135,16 +135,12 @@ function customMessageReply(message) {
         switch (message.payload.facebook.attachment.type) {
           case 'video':
             return videoReply(message.payload.facebook.attachment.payload);
-            break;
           case 'audio':
             return audioReply(message.payload.facebook.attachment.payload);
-            break;
           case 'file':
             return fileReply(message.payload.facebook.attachment.payload);
-            break;
           case 'image':
             return imageReply(message.payload.facebook.attachment.payload);
-            break;
         }
       }
     }
