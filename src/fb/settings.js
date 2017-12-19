@@ -1,11 +1,13 @@
 const rp = require('request-promise');
 const log = require('../log');
+const constants = require('../common/constants');
+const env = require('../multiconf')();
 
-async function setThreadSettings(data, method = 'POST') {
+async function setThreadSettings(data, method = 'POST', { pageId=null}={}) {
   const reqData = {
-    url: 'https://graph.facebook.com/v2.9/me/thread_settings',
+    url: constants.getFacebookGraphURL('/me/thread_settings'),
     qs: {
-      access_token: process.env.FB_PAGE_ACCESS_TOKEN
+      access_token: env.getFacebookPageTokenByPageID(pageId)
     },
     resolveWithFullResponse: true,
     method,

@@ -22,7 +22,6 @@ describe('Testing FB settings', () => {
     });
 
     rewiremock.enable();
-    rewiremock.isolation();
 
     const fbSet = require(rewiremock.resolve('../src/fb/settings'));
     await fbSet.setThreadSettings({});
@@ -30,7 +29,9 @@ describe('Testing FB settings', () => {
     rewiremock.disable();
     rewiremock.clear();
 
-    assert.equal(lodash.get(rpData, 'url'), 'https://graph.facebook.com/v2.9/me/thread_settings');
+    const constants = require('../src/common/constants');
+
+    assert.equal(lodash.get(rpData, 'url'), constants.getFacebookGraphURL('/me/thread_settings'));
     assert.equal(lodash.get(rpData, 'method'), 'POST');
   });
 
@@ -43,7 +44,6 @@ describe('Testing FB settings', () => {
     });
 
     rewiremock.enable();
-    rewiremock.isolation();
 
     const fbSet = require(rewiremock.resolve('../src/fb/settings'));
     await fbSet.greetingText('hello');
@@ -66,7 +66,6 @@ describe('Testing FB settings', () => {
     });
 
     rewiremock.enable();
-    rewiremock.isolation();
 
     const fbSet = require(rewiremock.resolve('../src/fb/settings'));
     await fbSet.getStartedButton('hello');
@@ -90,7 +89,6 @@ describe('Testing FB settings', () => {
     });
 
     rewiremock.enable();
-    rewiremock.isolation();
 
     const fbSet = require(rewiremock.resolve('../src/fb/settings'));
     await fbSet.persistentMenu([
@@ -120,7 +118,6 @@ describe('Testing FB settings', () => {
     });
 
     rewiremock.enable();
-    rewiremock.isolation();
 
     const fbSet = require(rewiremock.resolve('../src/fb/settings'));
     await fbSet.deletePersistentMenu();

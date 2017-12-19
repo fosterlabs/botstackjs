@@ -3,7 +3,12 @@ const path = require('path');
 const lodash = require('lodash');
 
 function checkAndLoadConfig() {
-  const basePath = path.dirname(require.main.filename);
+  let basePath = null;
+  if (lodash.has(require.main, 'filename')) {
+    basePath = path.dirname(require.main.filename);
+  } else {
+    basePath = process.cwd();
+  }
   const configPath = path.join(basePath, 'conf/conf.json');
   if (fs.existsSync(configPath)) {
     return require(configPath); // eslint-disable-line global-require,import/no-dynamic-require
@@ -65,5 +70,6 @@ async function parseConfig(self) {
 }
 
 module.exports = {
+  checkAndLoadConfig,
   parseConfig
 };

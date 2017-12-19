@@ -1,7 +1,9 @@
 const log = require('../log');
 const rp = require('request-promise');
+const constants = require('../common/constants');
+const env = require('../multiconf')();
 
-async function typing(userID, isOn = false) {
+async function typing(userID, isOn = false, { pageId=null }={}) {
   // mark_seen - Mark last message as read
   // typing_on - turn typing indicators on
   // typing_off - turn typing indicators off
@@ -15,9 +17,9 @@ async function typing(userID, isOn = false) {
     sender_action: action
   };
   const reqData = {
-    url: 'https://graph.facebook.com/v2.9/me/messages',
+    url: constants.getFacebookGraphURL('/me/messages'),
     qs: {
-      access_token: process.env.FB_PAGE_ACCESS_TOKEN
+      access_token: env.getFacebookPageTokenByPageID(pageId)
     },
     resolveWithFullResponse: true,
     method: 'POST',

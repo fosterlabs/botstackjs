@@ -1,12 +1,13 @@
 const rp = require('request-promise');
 const lodash = require('lodash');
 const log = require('../log');
+const env = require('../multiconf')();
 
 async function setMessengerProfileData(data) {
   const reqData = {
     url: 'https://graph.facebook.com/v2.10/me/messenger_profile',
     qs: {
-      access_token: process.env.FB_PAGE_ACCESS_TOKEN
+      access_token: env.getEnvDefault('FB_PAGE_ACCESS_TOKEN')
     },
     resolveWithFullResponse: true,
     method: 'POST',

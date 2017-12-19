@@ -1,8 +1,13 @@
 const _ = require('lodash');
 const rp = require('request-promise');
 const log = require('../log');
+const env = require('../multiconf')();
+const constants = require('../common/constants');
 
-async function reply(message, senderId, {messagingType='RESPONSE', params=null}={}) {
+async function reply(message, senderId, {
+  messagingType='RESPONSE',
+  params=null,
+  pageId=null }={}) {
   const logData = {};
   const sendData = {
     messaging_type: messagingType,
@@ -16,6 +21,14 @@ async function reply(message, senderId, {messagingType='RESPONSE', params=null}=
     logData['recipientUserRef'] = senderId;
     sendData['recipient'] = {
       user_ref: senderId
+    };
+  } else if (_.get(params, 'is_customer_matching') === true) {
+    sendData['recipient'] = {
+      phone_number: _.get(params, 'customer_matching.phone_number'),
+      name: {
+        first_name: _.get(params, 'customer_matching.first_name'),
+        last_name: _.get(params, 'customer_matching.last_name')
+      }
     };
   } else {
     logData['senderId'] = senderId;
@@ -32,9 +45,9 @@ async function reply(message, senderId, {messagingType='RESPONSE', params=null}=
   }
 
   const reqData = {
-    url: 'https://graph.facebook.com/v2.9/me/messages',
+    url: constants.getFacebookGraphURL('/me/messages'),
     qs: {
-      access_token: process.env.FB_PAGE_ACCESS_TOKEN
+      access_token: env.getFacebookPageTokenByPageID(pageId)
     },
     method: 'POST',
     json: sendData,

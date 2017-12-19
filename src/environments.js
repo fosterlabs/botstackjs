@@ -1,5 +1,6 @@
 const lodash = require('lodash');
 const restify = require('restify');
+const env = require('./multiconf')();
 
 const envVars = [
   { name: 'FB_PAGE_ACCESS_TOKEN', required: true, module: ['fb'] },
@@ -33,7 +34,7 @@ function processEnvironmentVariables(self) {
 function checkEnvironmentVariables() {
   let enabledModules = [];
   for (const envVar of envVars) {
-    if (envVar.name in process.env) {
+    if (env.getEnv(envVar.name)) {
       enabledModules = lodash.union(enabledModules, envVar.module);
     }
   }
@@ -52,7 +53,7 @@ function checkEnvironmentVariables() {
 
   const notFoundEnvs = [];
   for (const e of checkVars) {
-    if (!(e in process.env)) {
+    if (!env.getEnv(e)) {
       notFoundEnvs.push(e);
     }
   }

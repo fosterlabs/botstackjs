@@ -22,7 +22,6 @@ describe('Testing FB typing', () => {
     });
 
     rewiremock.enable();
-    rewiremock.isolation();
 
     const fb = require(rewiremock.resolve('../src/fb/typing'));
     const senderID = '1234567890';
@@ -45,7 +44,6 @@ describe('Testing FB typing', () => {
     });
 
     rewiremock.enable();
-    rewiremock.isolation();
 
     const fb = require(rewiremock.resolve('../src/fb/typing'));
     const senderID = '1234567890';

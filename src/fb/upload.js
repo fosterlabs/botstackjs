@@ -1,7 +1,9 @@
 const rp = require('request-promise');
 const log = require('../log');
+const env = require('../multiconf')();
+const constants = require('../common/constants');
 
-async function attachmentUpload(attachmentURL, attachmentType = 'video') {
+async function attachmentUpload(attachmentURL, attachmentType = 'video', { pageId=null }={}) {
   const msg = {
     message: {
       attachment: {
@@ -15,9 +17,9 @@ async function attachmentUpload(attachmentURL, attachmentType = 'video') {
   };
 
   const reqData = {
-    url: 'https://graph.facebook.com/v2.9/me/message_attachments',
+    url: constants.getFacebookGraphURL('/me/message_attachments'),
     qs: {
-      access_token: process.env.FB_PAGE_ACCESS_TOKEN
+      access_token: env.getFacebookPageTokenByPageID(pageId)
     },
     resolveWithFullResponse: true,
     method: 'POST',

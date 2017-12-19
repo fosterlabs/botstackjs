@@ -21,6 +21,17 @@ describe('Testing FB reply', () => {
       return null;
     });
 
+    rewiremock('../multiconf').with(() => {
+      return {
+        getEnv: (envName) => {
+          return "123";
+        },
+        getFacebookPageTokenByPageID: (envName) => {
+          return "123";
+        }
+      };
+    });
+
     rewiremock.enable();
     rewiremock.isolation();
 
@@ -37,5 +48,6 @@ describe('Testing FB reply', () => {
     assert.equal(lodash.get(rpData, 'json.message.text'), 'hello');
     assert.isOk(lodash.has(rpData, 'qs.access_token'));
     assert.isOk(lodash.has(rpData, 'url'));
+    assert.equal(lodash.get(rpData, 'qs.access_token'), '123');
   });
 });

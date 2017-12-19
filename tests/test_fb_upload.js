@@ -22,7 +22,6 @@ describe('Tesing FB upload', () => {
     });
 
     rewiremock.enable();
-    rewiremock.isolation();
 
     const fb = require(rewiremock.resolve('../src/fb/upload'));
     await fb.attachmentUpload('http://example.com/demo.jpg', 'image');
