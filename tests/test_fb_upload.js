@@ -1,4 +1,4 @@
-const lodash = require('lodash');
+const _ = require('lodash');
 const rewiremock = require('rewiremock').default;
 const { addPlugin, plugins } = require('rewiremock');
 
@@ -22,17 +22,17 @@ describe('Tesing FB upload', () => {
     });
 
     rewiremock.enable();
-    rewiremock.isolation();
 
-    const fb = require(rewiremock.resolve('../src/fb/upload'));
+    const fbInstance = require(rewiremock.resolve('../src/fb/upload'));
+    const fb = fbInstance(null);
     await fb.attachmentUpload('http://example.com/demo.jpg', 'image');
 
     rewiremock.disable();
     rewiremock.clear();
 
-    assert.equal(lodash.get(rpData, 'json.message.attachment.type'), 'image');
-    assert.equal(lodash.get(rpData, 'json.message.attachment.payload.url'), 'http://example.com/demo.jpg');
-    assert.equal(lodash.get(rpData, 'json.message.attachment.payload.is_reusable'), true);
-    assert.equal(lodash.get(rpData, 'url'), 'https://graph.facebook.com/v2.9/me/message_attachments');
+    assert.equal(_.get(rpData, 'json.message.attachment.type'), 'image');
+    assert.equal(_.get(rpData, 'json.message.attachment.payload.url'), 'http://example.com/demo.jpg');
+    assert.equal(_.get(rpData, 'json.message.attachment.payload.is_reusable'), true);
+    assert.equal(_.get(rpData, 'url'), 'https://graph.facebook.com/v2.9/me/message_attachments');
   });
 });

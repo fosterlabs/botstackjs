@@ -1,48 +1,56 @@
+const _ = require('lodash');
 const rp = require('request-promise');
-const lodash = require('lodash');
 const log = require('../log');
+const multiconf = require('../multiconf');
+const constants = require('../common/constants');
 
-async function setMessengerProfileData(data) {
-  const reqData = {
-    url: 'https://graph.facebook.com/v2.10/me/messenger_profile',
-    qs: {
-      access_token: process.env.FB_PAGE_ACCESS_TOKEN
-    },
-    resolveWithFullResponse: true,
-    method: 'POST',
-    json: data
-  };
+module.exports = (botstackInstance) => {
+  const self = botstackInstance;
+  const env = multiconf(self);
 
-  try {
-    const response = await rp(reqData);
-    if (response.statusCode == 200) {
-      log.debug('Sent persistent menu', {
+  async function setMessengerProfileData(data) {
+    const FB_PAGE_ACCESS_TOKEN = await env.getEnvDefault('FB_PAGE_ACCESS_TOKEN');
+    const reqData = {
+      url: constants.getFacebookGraphURL('/me/messenger_profile'),
+      qs: {
+        access_token: FB_PAGE_ACCESS_TOKEN
+      },
+      resolveWithFullResponse: true,
+      method: 'POST',
+      json: data
+    };
+
+    try {
+      const response = await rp(reqData);
+      if (response.statusCode == 200) {
+        log.debug('Sent persistent menu', {
+          module: 'botstack:fb'
+        });
+        return response.body;
+      }
+      log.error('Error in Facebook response', {
+        module: 'botstack:fb', response: response.body
+      });
+      throw new Error(`Error in Facebook response ${response.body}`);
+    } catch (e) {
+      log.error(e, {
         module: 'botstack:fb'
       });
-      return response.body;
+      throw e;
     }
-    log.error('Error in Facebook response', {
-      module: 'botstack:fb', response: response.body
-    });
-    throw new Error(`Error in Facebook response ${response.body}`);
-  } catch (e) {
-    log.error(e, {
+  }
+
+  async function setPersistentMenuViaProfile(initData = []) {
+    log.debug('Sending persistent menu', {
       module: 'botstack:fb'
     });
-    throw e;
+    const data = {
+      persistent_menu: _.cloneDeep(initData)
+    };
+    return setMessengerProfileData(data);
   }
-}
 
-async function setPersistentMenuViaProfile(initData = []) {
-  log.debug('Sending persistent menu', {
-    module: 'botstack:fb'
-  });
-  const data = {
-    persistent_menu: lodash.cloneDeep(initData)
+  return {
+    setPersistentMenuViaProfile
   };
-  return setMessengerProfileData(data);
-}
-
-module.exports = {
-  setPersistentMenuViaProfile
 };

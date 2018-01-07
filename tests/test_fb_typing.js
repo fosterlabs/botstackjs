@@ -1,4 +1,4 @@
-const lodash = require('lodash');
+const _ = require('lodash');
 const rewiremock = require('rewiremock').default;
 const { addPlugin, plugins } = require('rewiremock');
 
@@ -22,18 +22,18 @@ describe('Testing FB typing', () => {
     });
 
     rewiremock.enable();
-    rewiremock.isolation();
 
-    const fb = require(rewiremock.resolve('../src/fb/typing'));
+    const fbInstance = require(rewiremock.resolve('../src/fb/typing'));
+    const fb = fbInstance(null);
     const senderID = '1234567890';
     await fb.typing(senderID, true);
 
     rewiremock.disable();
     rewiremock.clear();
 
-    assert.equal(lodash.get(rpData, 'method'), 'POST');
-    assert.equal(lodash.get(rpData, 'json.recipient.id'), senderID);
-    assert.equal(lodash.get(rpData, 'json.sender_action'), 'typing_on');
+    assert.equal(_.get(rpData, 'method'), 'POST');
+    assert.equal(_.get(rpData, 'json.recipient.id'), senderID);
+    assert.equal(_.get(rpData, 'json.sender_action'), 'typing_on');
   });
 
   it('fb typing off', async () => {
@@ -45,17 +45,17 @@ describe('Testing FB typing', () => {
     });
 
     rewiremock.enable();
-    rewiremock.isolation();
 
-    const fb = require(rewiremock.resolve('../src/fb/typing'));
+    const fbInstance = require(rewiremock.resolve('../src/fb/typing'));
+    const fb = fbInstance(null);
     const senderID = '1234567890';
     await fb.typing(senderID);
 
     rewiremock.disable();
     rewiremock.clear();
 
-    assert.equal(lodash.get(rpData, 'method'), 'POST');
-    assert.equal(lodash.get(rpData, 'json.recipient.id'), senderID);
-    assert.equal(lodash.get(rpData, 'json.sender_action'), 'typing_off');
+    assert.equal(_.get(rpData, 'method'), 'POST');
+    assert.equal(_.get(rpData, 'json.recipient.id'), senderID);
+    assert.equal(_.get(rpData, 'json.sender_action'), 'typing_off');
   });
 });

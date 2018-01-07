@@ -1,10 +1,11 @@
-const lodash = require('lodash');
+const _ = require('lodash');
 const restify = require('restify');
+const multiconf = require('./multiconf');
 
 const envVars = [
   { name: 'FB_PAGE_ACCESS_TOKEN', required: true, module: ['fb'] },
   { name: 'FB_VERIFY_TOKEN', required: true, module: ['fb'] },
-  { name: 'APIAI_ACCESS_TOKEN', required: true, module: ['api-ai'] },
+  { name: 'DIALOGFLOW_ACCESS_TOKEN', required: true, module: ['dialogflow'] },
   { name: 'AWS_ACCESS_KEY', required: false, module: ['s3'] },
   { name: 'AWS_SECRET_KEY', required: false, module: ['s3'] },
   { name: 'BUCKET_NAME', required: false, module: ['s3'] },
@@ -18,41 +19,68 @@ const envVars = [
   { name: 'SMOOCH_SCOPE', required: false, module: ['smooch'] }
 ];
 
-function processEnvironmentVariables(self) {
-  if (lodash.has(process.env, 'BOTSTACK_STATIC')) {
-    if (!lodash.has(process.env, 'BOTSTACK_URL')) {
+async function processEnvironmentVariables(self) {
+  const env = multiconf(self);
+  const BOTSTACK_STATIC = await env.getEnv('BOTSTACK_STATIC');
+  const BOTSTACK_URL = await env.getEnv('BOTSTACK_URL');
+  if (BOTSTACK_STATIC) {
+    if (BOTSTACK_URL) {
       throw new Error('BOTSTACK_URL not found');
     }
     self.server.get(/\/public\/?.*/, restify.serveStatic({
-      directory: process.env.BOTSTACK_STATIC
+      directory: BOTSTACK_STATIC
     }));
   }
 }
 
 /* eslint-disable no-restricted-syntax */
-function checkEnvironmentVariables() {
-  let enabledModules = [];
-  for (const envVar of envVars) {
-    if (envVar.name in process.env) {
-      enabledModules = lodash.union(enabledModules, envVar.module);
-    }
-  }
-  const requiredModules = lodash.flatten(
-    lodash.map(lodash.filter(envVars, data => data.required),
-               data => data.module));
-  enabledModules = lodash.union(enabledModules, requiredModules);
+async function checkEnvironmentVariables(self) {
 
+  const env = multiconf(self);
+  let enabledModules = []; // list of enabled modules (found values in env)
+
+  let _getEnvPromises = [];
+  for (const envVar of envVars) {
+    _getEnvPromises.push(env.getEnv(envVar.name));
+  }
+  const _getEnvPromisesResults = await Promise.all(_getEnvPromises);
+
+  let _envVarsValues = []; // values of all possible env vars
+  let idx = 0;
+  for (const env of envVars) {
+    _envVarsValues.push({
+      name: env.name,
+      value: _getEnvPromisesResults[idx],
+      module: env.module
+    });
+    idx += 1;
+  }
+
+  // filtered env var values (check value exists)
+  const _envVarsValuesActive = _.filter(_envVarsValues, (x) => { return x.value; });
+  // list of modules names, which env values exists in env
+  enabledModules = _.uniq(_.flattenDeep(_.map(_envVarsValuesActive, (e) => e.module)));
+  // list of required modules
+  const requiredModules = _.flatten(
+    _.map(_.filter(envVars, data => data.required),
+          data => data.module));
+  // union required modules with enabled modules for checking all rules
+  // for example:
+  // fb module required: FB_PAGE_ACCESS_TOKEN and FB_VERIFY_TOKEN
+  // if we have in env only FB_PAGE_ACCESS_TOKEN, BotstackJS understand as we turn on FB module
+  // and next BotstackJS should check all envs for this module: FB_PAGE_ACCESS_TOKEN, FB_VERIFY_TOKEN
+  enabledModules = _.union(enabledModules, requiredModules);
   let checkVars = [];
   for (const c of enabledModules) {
-    const temp = lodash.map(
-      lodash.filter(envVars, data => lodash.includes(data.module, c)),
+    const temp = _.map(
+      _.filter(envVars, data => _.includes(data.module, c)),
       data => data.name);
-    checkVars = lodash.union(checkVars, temp);
+    checkVars = _.union(checkVars, temp);
   }
 
   const notFoundEnvs = [];
   for (const e of checkVars) {
-    if (!(e in process.env)) {
+    if (!await env.getEnv(e)) {
       notFoundEnvs.push(e);
     }
   }

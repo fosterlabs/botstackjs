@@ -3,5 +3,11 @@
   "persistentMenu": [
     {"type": "postback", "title": "Help", "payload": "Help"}
   ],
-  "welcomeText": "Change this welcome text in conf/conf.json file"
+  "welcomeText": "Change this welcome text in conf/conf.json file",
+    "env": {
+        "FB_PAGE_ACCESS_TOKEN": [
+          { "PAGE_ID": "12", "FB_PAGE_ACCESS_TOKEN": "567", "is_default": "true" },
+          { "PAGE_ID": "15", "FB_PAGE_ACCESS_TOKEN": "890" }
+        ]
+    }
 }

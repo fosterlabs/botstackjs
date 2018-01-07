@@ -1,9 +1,15 @@
+const _ = require('lodash');
 const fs = require('fs');
 const path = require('path');
-const lodash = require('lodash');
+
 
 function checkAndLoadConfig() {
-  const basePath = path.dirname(require.main.filename);
+  let basePath = null;
+  if (_.has(require.main, 'filename')) {
+    basePath = path.dirname(require.main.filename);
+  } else {
+    basePath = process.cwd();
+  }
   const configPath = path.join(basePath, 'conf/conf.json');
   if (fs.existsSync(configPath)) {
     return require(configPath); // eslint-disable-line global-require,import/no-dynamic-require
@@ -19,7 +25,7 @@ async function parseConfig(self) {
     self.log.debug('Custom config file loaded', { module: 'botstack:constructor' });
   }
 
-  if (lodash.has(conf, 'subscribeTo')) {
+  if (_.has(conf, 'subscribeTo')) {
     self.subscriber = require('./redis'); // eslint-disable-line global-require
     self.subscriber.on('message', (channel, message) => {
       self.subscription(message);
@@ -31,39 +37,35 @@ async function parseConfig(self) {
     });
   }
 
-  if (lodash.has(conf, 'getStartedButtonText')) {
-    self.fb.getStartedButton(conf.getStartedButtonText).then((data) => {
-      self.log.debug('Started button done', { module: 'botstack:constructor', result: data.result });
-    });
+  if (_.has(conf, 'getStartedButtonText')) {
+    const data = await self.fb.getStartedButton(conf.getStartedButtonText);
+    self.log.debug('Started button done', { module: 'botstack:constructor', result: data.result });
   } else {
-    self.fb.getStartedButton().then((data) => {
-      self.log.debug('Started button done', { module: 'botstack:constructor', result: data.result });
-    });
+    const data = await self.fb.getStartedButton();
+    self.log.debug('Started button done', { module: 'botstack:constructor', result: data.result });
   }
 
-  if (lodash.has(conf, 'persistentMenu')) {
-    if ((lodash.isArray(conf.persistentMenu)) && (conf.persistentMenu.length > 0)) {
-      if (lodash.has(conf.persistentMenu[0], 'type')) {
+  if (_.has(conf, 'persistentMenu')) {
+    if ((_.isArray(conf.persistentMenu)) && (conf.persistentMenu.length > 0)) {
+      if (_.has(conf.persistentMenu[0], 'type')) {
         // old style config
-        self.fb.persistentMenu(conf.persistentMenu).then((data) => {
-          self.log.debug('Persistent menu done', { module: 'botstack:constructor', result: data.result });
-        });
-      } else if (lodash.has(conf.persistentMenu[0], 'call_to_actions')) {
+        const data = await self.fb.persistentMenu(conf.persistentMenu);
+        self.log.debug('Persistent menu done', { module: 'botstack:constructor', result: data.result });
+      } else if (_.has(conf.persistentMenu[0], 'call_to_actions')) {
         // new style config
-        self.fb.setPersistentMenuViaProfile(conf.persistentMenu).then((data) => {
-          self.log.debug('Persistent menu done', { module: 'botstack:constructor', result: data.result });
-        });
+        const data = await self.fb.setPersistentMenuViaProfile(conf.persistentMenu);
+        self.log.debug('Persistent menu done', { module: 'botstack:constructor', result: data.result });
       }
     }
   }
 
-  if (lodash.has(conf, 'welcomeText')) {
-    self.fb.greetingText(conf.welcomeText).then((data) => {
-      self.log.debug('Welcome text done', { module: 'botstack:constructor', result: data.result });
-    });
+  if (_.has(conf, 'welcomeText')) {
+    const data = await self.fb.greetingText(conf.welcomeText);
+    self.log.debug('Welcome text done', { module: 'botstack:constructor', result: data.result });
   }
 }
 
 module.exports = {
+  checkAndLoadConfig,
   parseConfig
 };
