@@ -1,12 +1,17 @@
 const log = require('../log');
 const rp = require('request-promise');
+const constants = require('../common/constants');
+const multiconf = require('../multiconf');
 
-async function typing(userID, isOn = false) {
+let self = null;
+
+async function typing(userID, isOn = false, { pageId = null } = {}) {
   // mark_seen - Mark last message as read
   // typing_on - turn typing indicators on
   // typing_off - turn typing indicators off
   // Typing indicators are automatically turned off after 20 seconds
 
+  const env = multiconf(self);
   const action = isOn ? 'typing_on' : 'typing_off';
   const msg = {
     recipient: {
@@ -14,10 +19,11 @@ async function typing(userID, isOn = false) {
     },
     sender_action: action
   };
+  const FB_PAGE_ACCESS_TOKEN = await env.getFacebookPageTokenByPageID(pageId);
   const reqData = {
-    url: 'https://graph.facebook.com/v2.9/me/messages',
+    url: constants.getFacebookGraphURL('/me/messages'),
     qs: {
-      access_token: process.env.FB_PAGE_ACCESS_TOKEN
+      access_token: FB_PAGE_ACCESS_TOKEN
     },
     resolveWithFullResponse: true,
     method: 'POST',
@@ -46,6 +52,10 @@ async function typing(userID, isOn = false) {
   }
 }
 
-module.exports = {
-  typing
+module.exports = (botstackInstance) => {
+  self = botstackInstance;
+
+  return {
+    typing
+  };
 };

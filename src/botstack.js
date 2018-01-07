@@ -1,95 +1,51 @@
 const _ = require('lodash');
-const fs = require('fs');
-const path = require('path');
 const restify = require('restify');
 const rp = require('request-promise');
 
-const fb = require('./fb');
-const apiai = require('./api-ai');
+const fbInstance = require('./fb');
+const dialogflow = require('./dialogflow');
 const log = require('./log');
 const smooch = require('./smooch');
 const environments = require('./environments');
 const settings = require('./settings');
 
-/*
+
 process.on('unhandledRejection', (reason, p) => {
-    // console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
+  log.error('Unhandled Rejection at: Promise', p, 'reason:', reason);
 });
 process.on('uncaughtException', (err) => {
-  console.log(`Caught exception: ${err}`);
+  log.error(`Caught exception: ${err}`);
 });
-*/
+
 
 const sessionStore = require('./session')();
 const state = require('./state')();
-const db = require('./dynamodb');
 const s3 = require('./s3');
+const env = require('./multiconf');
 
 const { BotStackEmitterInit, BotStackCheck, BotStackEvents } = require('./events');
 
 class BotStack {
 
-  constructor(botName = 'default bot') {
+  constructor(botName = 'default bot', { useSmoochWebhook = false } = {}) {
     this.botName = botName;
     this.server = restify.createServer();
+    this.restify = restify;
 
-        // utils
-    this.fb = fb;
-    this.apiai = apiai;
+    // utils
+    this.fb = fbInstance(this);
+    this.apiai = dialogflow(this); // for backward compatibility
+    this.dialogflow = dialogflow(this);
     this.s3 = s3;
     this.log = log;
-
-    settings.parseConfig(this);
-    environments.checkEnvironmentVariables();
-    environments.processEnvironmentVariables(this);
-
-    this.server.use(restify.queryParser());
-    this.server.use(restify.bodyParser());
-
-    this.events = BotStackEmitterInit;
-    this.state = state;
-
-    this.server.get('/', (req, res, next) => {
-      res.send('Nothing to see here...');
-      return next();
-    });
-
-    this.server.get('/webhook/', (req, res, next) => {
-      const token = req.query.hub.verify_token;
-      if (token === process.env.FB_VERIFY_TOKEN) {
-        res.write(req.query.hub.challenge);
-        res.end();
-      } else {
-        res.send('Error, wrong validation token');
-      }
-      return next();
-    });
-
-    this.server.post('/webhook/', this._webhookPost(this)); // eslint-disable-line no-underscore-dangle
-
-    this.server.post('/smooch/webhook/', this._smoochWebhook(this)); // eslint-disable-line no-underscore-dangle
-
-    this.server.post('/apiaidb/', function (req, res, next) {
-      res.json({
-        speech: req.body.result.fulfillment.speech,
-        displayText: req.body.result.fulfillment.speech,
-        source: this.botName
-      });
-      res.end();
-      log.debug('Received a database hook from API.AI', {
-        module: 'botstack:apiaidb'
-      });
-      // add to db
-      if (req.body) {
-        db.logApiaiObject(req.body);
-      } else {
-        log.debug('No body to put in DB', {
-          module: 'botstack:apiaidb'
-        });
-      }
-      return next();
-    });
+    this.env = env(this);
   }
+
+  /* eslint-disable class-methods-use-this, no-unused-vars */
+  async customGetEnv(envName, params = {}) {
+    return null;
+  }
+  /* eslint-enable class-methods-use-this, no-unused-vars */
 
   /* eslint-disable no-unused-vars */
   subscription(message) {
@@ -99,52 +55,58 @@ class BotStack {
   }
   /* eslint-enable no-unused-vars */
 
-  async geoLocationMessage(message, senderID) {
+  async geoLocationMessage(message, senderId, pageId) {
     this.log.debug('Process GEO location message', {
       module: 'botstack:geoLocationMessage',
-      senderId: senderID,
-      message
+      senderId,
+      message,
+      pageId
     });
     if (BotStackCheck('geoLocationMessage')) {
       BotStackEvents.emit('geoLocationMessage', {
-        senderID,
-        message
+        senderId,
+        message,
+        pageId
       });
     }
   }
 
-  async textMessage(message, senderID, dontUseEvents = false) {
+  async textMessage(message, senderId, pageId, dontUseEvents = false) {
     const text = message.message.text;
     // botmetrics.logUserRequest(text, senderID);
     this.log.debug('Process text message', {
       module: 'botstack:textMessage',
-      senderId: senderID,
+      senderId,
       message
     });
     if (!dontUseEvents) {
       if (BotStackCheck('textMessage')) {
         BotStackEvents.emit('textMessage', {
-          senderID,
-          message
+          senderId,
+          message,
+          pageId
         });
         return;
       }
     }
     this.log.debug('Sending to API.AI', {
       module: 'botstack:textMessage',
-      senderId: senderID,
+      senderId,
       text
     });
     try {
-      const apiaiResp = await apiai.processTextMessage(text, senderID);
-      await fb.processMessagesFromApiAi(apiaiResp, senderID);
+      const dialogflowResp = await this.dialogflow.processTextMessage(text, senderId, pageId);
+      await this.fb.processMessagesFromDialogflow(dialogflowResp, senderId, pageId);
             // botmetrics.logServerResponse(apiaiResp, senderID);
     } catch (err) {
-      await fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
-      log.error(err, {
+      await this.fb.reply(
+        this.fb.textMessage("I'm sorry, I didn't understand that"),
+        senderId, { pageId });
+      this.log.error(err, {
         module: 'botstack:textMessage',
-        senderId: senderID,
-        reason: 'Error on API.AI request'
+        senderId,
+        pageId,
+        reason: 'Error on Dialogflow request'
       });
             // botmetrics.logServerResponse(err, senderID);
     }
@@ -169,12 +131,13 @@ class BotStack {
           message: msg
         });
         const text = _.get(msg, 'text');
-        const authorID = _.get(msg, 'authorId');
-        let apiAiResponse = null;
+        const authorId = _.get(msg, 'authorId');
+        let dialogflowResponse = null;
         let result = null;
+        const pageId = ''; // TODO: check ?
         try {
-          apiAiResponse = await self.apiai.processTextMessage(text, authorID);
-          result = await smooch.processMessagesFromApiAi(apiAiResponse, authorID);
+          dialogflowResponse = await self.dialogflow.processTextMessage(text, authorId, pageId);
+          result = await smooch.processMessagesFromDialogflow(dialogflowResponse, authorId);
           self.log.debug('Smooch API result', {
             module: 'botstack:smoochWebhook',
             result
@@ -190,9 +153,10 @@ class BotStack {
   }
 
   async _syncFbMessageToBackChat(req) {
-    if (process.env.BACKCHAT_FB_SYNC_URL) {
+    const BACKCHAT_FB_SYNC_URL = await this.env.getEnv('BACKCHAT_FB_SYNC_URL');
+    if (BACKCHAT_FB_SYNC_URL) {
       const reqData = {
-        url: process.env.BACKCHAT_FB_SYNC_URL,
+        url: BACKCHAT_FB_SYNC_URL,
         resolveWithFullResponse: true,
         method: 'POST',
         json: req.body
@@ -226,14 +190,18 @@ class BotStack {
       await self._syncFbMessageToBackChat(req); // eslint-disable-line no-underscore-dangle
       const entries = _.get(req, 'body.entry', []);
       for (const entry of entries) {
+        let pageId = null;
+        if (_.get(req.body, 'object') === 'page') {
+          pageId = _.get(entry, 'id', null);
+        }
         const messages = _.get(entry, 'messaging', []);
         for (const message of messages) {
           // The sender object is not included for messaging_optins events triggered by the checkbox plugin.
           // https://developers.facebook.com/docs/messenger-platform/reference/webhook-events/messaging_optins
           let isMessagingOptins = false;
           let recipientUserRef = null;
-          const senderID = _.get(message, 'sender.id');
-          if ((!senderID) && (_.has(message, 'optin.user_ref'))) {
+          const senderId = _.get(message, 'sender.id');
+          if ((!senderId) && (_.has(message, 'optin.user_ref'))) {
             isMessagingOptins = true;
             recipientUserRef = _.get(message, 'optin.user_ref');
           }
@@ -241,18 +209,20 @@ class BotStack {
           if (isEcho) {
             continue; // eslint-disable-line no-continue
           }
-          log.debug('New Facebook message', {
+          self.log.debug('New Facebook message', {
             module: 'botstack:webhookPost',
+            page_id: pageId,
             message
           });
-          const isNewSession = await sessionStore.checkExists(senderID);
+          const isNewSession = await sessionStore.checkExists(senderId);
           const isPostbackMessage = !!message.postback;
           const isQuickReplyPayload = !!_.get(message, 'message.quick_reply.payload');
           const isTextMessage = !!(!isQuickReplyPayload && _.get(message, 'message.text'));
           const isGeoLocationMessage = !!_.get(message, 'message.attachments[0].payload.coordinates');
-          log.debug('Detect kind of message', {
+          self.log.debug('Detect kind of message', {
             module: 'botstack:webhookPost',
-            senderID,
+            senderId,
+            pageId,
             isNewSession,
             isPostbackMessage,
             isQuickReplyPayload,
@@ -260,27 +230,27 @@ class BotStack {
             isGeoLocationMessage,
             isMessagingOptins
           });
-          await sessionStore.set(senderID);
+          await sessionStore.set(senderId);
           if (isQuickReplyPayload) {
-            await self.quickReplyPayload(message, senderID);
+            await self.quickReplyPayload(message, senderId, pageId);
           } else if (isGeoLocationMessage) {
-            await self.geoLocationMessage(message, senderID);
+            await self.geoLocationMessage(message, senderId, pageId);
           } else if (isTextMessage) {
             if (message.message.text === 'Get Started') {
-              await self.welcomeMessage(message.message.text, senderID);
+              await self.welcomeMessage(message.message.text, senderId, pageId);
             } else {
-              await self.textMessage(message, senderID);
+              await self.textMessage(message, senderId, pageId);
             }
           } else if (isPostbackMessage) {
             if (message.postback.payload === 'Get Started') {
-              await self.welcomeMessage(message.postback.payload, senderID);
+              await self.welcomeMessage(message.postback.payload, senderId, pageId);
             } else {
-              await self.postbackMessage(message, senderID);
+              await self.postbackMessage(message, senderId, pageId);
             }
           } else if (isMessagingOptins) {
             await self.messagingOptins(message, recipientUserRef);
           } else {
-            await self.fallback(message, senderID);
+            await self.fallback(message, senderId, pageId);
           }
         }
       }
@@ -288,114 +258,136 @@ class BotStack {
   }
   /* eslint-enable class-methods-use-this, func-names */
 
-  async welcomeMessage(messageText, senderID) {
+  async welcomeMessage(messageText, senderId, pageId) {
     // botmetrics.logUserRequest(messageText, senderID);
     this.log.debug('Process welcome message', {
       module: 'botstack:welcomeMessage',
-      senderId: senderID
+      senderId,
+      pageId
     });
     if (BotStackCheck('welcomeMessage')) {
       BotStackEvents.emit('welcomeMessage', {
-        senderID,
-        messageText
+        senderId,
+        messageText,
+        pageId
       });
       return;
     }
     try {
-      const apiaiResp = await apiai.processEvent('FACEBOOK_WELCOME', senderID);
+      const dialogflowResp = await this.dialogflow.processEvent('FACEBOOK_WELCOME', senderId, pageId);
       this.log.debug('Facebook welcome result', {
         module: 'botstack:welcomeMessage',
-        senderId: senderID
+        senderId,
+        pageId
       });
-      await fb.processMessagesFromApiAi(apiaiResp, senderID);
+      await this.fb.processMessagesFromDialogflow(dialogflowResp, senderId, pageId);
       // botmetrics.logServerResponse(apiaiResp, senderID);
     } catch (err) {
       this.log.error(err, {
         module: 'botstack:welcomeMessage',
-        senderId: senderID,
-        reason: 'Error in API.AI response'
+        senderId,
+        pageId,
+        reason: 'Error in Dialogflow response'
       });
-      await fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
+      await this.fb.reply(
+        this.fb.textMessage("I'm sorry, I didn't understand that"),
+        senderId,
+        pageId);
       // botmetrics.logServerResponse(err, senderID);
     }
   }
 
-  async postbackMessage(postback, senderID) {
+  async postbackMessage(postback, senderId, pageId) {
     const text = postback.postback.payload;
     this.log.debug('Process postback', {
       module: 'botstack:postbackMessage',
-      senderId: senderID,
+      senderId,
+      pageId,
       postback,
       text
     });
         // botmetrics.logUserRequest(text, senderID);
     if (BotStackCheck('postbackMessage')) {
       BotStackEvents.emit('postbackMessage', {
-        senderID,
+        senderId,
+        pageId,
         postback
       });
       return;
     }
-    this.log.debug('Sending to API.AI', {
+    this.log.debug('Sending to Dialogflow', {
       module: 'botstack:postbackMessage',
-      senderId: senderID,
+      senderId,
+      pageId,
       text
     });
     try {
-      const apiaiResp = await apiai.processTextMessage(text, senderID);
-      await fb.processMessagesFromApiAi(apiaiResp, senderID);
+      const dialogflowResp = await this.dialogflow.processTextMessage(text, senderId, pageId);
+      await this.fb.processMessagesFromDialogflow(dialogflowResp, senderId, pageId);
       // botmetrics.logServerResponse(apiaiResp, senderID);
     } catch (err) {
       this.log.error(err, {
         module: 'botstack:postbackMessage',
-        senderId: senderID,
-        reason: 'Error in API.AI response'
+        senderId,
+        pageId,
+        reason: 'Error in Dialogflow response'
       });
-      await fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
+      await this.fb.reply(
+        this.fb.textMessage("I'm sorry, I didn't understand that"),
+        senderId,
+        pageId);
       // botmetrics.logServerResponse(err, senderID);
     }
   }
 
-  async quickReplyPayload(message, senderID) {
+  async quickReplyPayload(message, senderId, pageId) {
     const text = _.get(message, 'message.quick_reply.payload');
     this.log.debug('Process quick reply payload', {
       module: 'botstack: quickReplyPayload',
-      senderId: senderID,
+      senderId,
+      pageId,
       text
     });
         // botmetrics.logUserRequest(text, senderID);
     if (BotStackCheck('quickReplyPayload')) {
       BotStackEvents.emit('quickReplyPayload', {
-        senderID,
+        senderId,
+        pageId,
         text,
         message
       });
       return;
     }
-    this.log.debug('Sending to API.AI', {
+    this.log.debug('Sending to Dialogflow', {
       module: 'botstack:quickReplyPayload',
-      senderId: senderID,
+      senderId,
+      pageId,
       text
     });
     try {
-      const apiaiResp = await apiai.processTextMessage(text, senderID);
-      await fb.processMessagesFromApiAi(apiaiResp, senderID);
+      const dialogflowResp = await this.dialogflow.processTextMessage(text, senderId, pageId);
+      await this.fb.processMessagesFromDialogflow(dialogflowResp, senderId, pageId);
       // botmetrics.logServerResponse(apiaiResp, senderID);
     } catch (err) {
       this.log.error(err, {
         module: 'botstack:quickReplyPayload',
-        senderId: senderID,
-        reason: 'Error in API.AI response'
+        senderId,
+        pageId,
+        reason: 'Error in Dialogflow response'
       });
-      await fb.reply(fb.textMessage("I'm sorry, I didn't understand that"), senderID);
+      await this.fb.reply(
+        this.fb.textMessage("I'm sorry, I didn't understand that"),
+        senderId,
+        pageId);
       // botmetrics.logServerResponse(err, senderID);
     }
   }
 
-  async fallback(message, senderID) {
+  async fallback(message, senderId, pageId) {
     this.log.debug('Unknown message', {
       module: 'botstack:fallback',
-      senderId: senderID,
+      senderId,
+      pageId,
       message
     });
   }
@@ -446,7 +438,40 @@ class BotStack {
       recipientUserRef,
       message
     });
-    await fb.reply(fb.textMessage('Hello!'), recipientUserRef, { params: { use_user_ref: true }});
+    await this.fb.reply(
+      this.fb.textMessage('Hello!'),
+      recipientUserRef, { params: { use_user_ref: true } });
+  }
+
+  async init() {
+    settings.parseConfig(this); // don't wait to complete with `async`
+    await environments.checkEnvironmentVariables(this);
+    await environments.processEnvironmentVariables(this);
+
+    this.server.use(restify.queryParser());
+    this.server.use(restify.bodyParser());
+    this.events = BotStackEmitterInit;
+    this.state = state;
+
+    this.server.get('/', (req, res, next) => {
+      res.send('Nothing to see here...');
+      return next();
+    });
+
+    this.server.get('/webhook/', async (req, res, next) => {
+      const token = req.query.hub.verify_token;
+      const FB_VERIFY_TOKEN = await this.env.getEnv('FB_VERIFY_TOKEN');
+      if (token === FB_VERIFY_TOKEN) {
+        res.write(req.query.hub.challenge);
+        res.end();
+      } else {
+        res.send('Error, wrong validation token');
+      }
+      return next();
+    });
+
+    this.server.post('/webhook/', this._webhookPost(this)); // eslint-disable-line no-underscore-dangle
+    this.server.post('/smooch/webhook/', this._smoochWebhook(this)); // eslint-disable-line no-underscore-dangle
   }
 
   startServer() {
@@ -461,6 +486,7 @@ class BotStack {
       });
     });
   }
+
 }
 
 module.exports = BotStack;

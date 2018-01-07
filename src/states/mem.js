@@ -1,17 +1,17 @@
 const Promise = require('bluebird');
 
 const co = Promise.coroutine;
-const lodash = require('lodash');
+const _ = require('lodash');
 
 const stateMap = new Map();
 
 const set = (senderId, stateValue = {}) => new Promise((resolve, reject) => {
   const oldVal = stateMap.get(senderId);
   if (oldVal) {
-    const newOne = lodash.cloneDeep(lodash.merge(oldVal, stateValue));
+    const newOne = _.cloneDeep(_.merge(oldVal, stateValue));
     stateMap.set(senderId, newOne);
   } else {
-    stateMap.set(senderId, lodash.cloneDeep(stateValue));
+    stateMap.set(senderId, _.cloneDeep(stateValue));
   }
   resolve();
 });

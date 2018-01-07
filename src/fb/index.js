@@ -1,13 +1,8 @@
-const { processMessagesFromApiAi } = require('./apiai');
-const { reply } = require('./reply');
-const { typing } = require('./typing');
-const { attachmentUpload } = require('./upload');
-const {
-  greetingText,
-  getStartedButton,
-  persistentMenu,
-  deletePersistentMenu
-} = require('./settings');
+const dialogflowInstance = require('./dialogflow');
+const replyInstance = require('./reply');
+const typingInstance = require('./typing');
+const attachmentUploadInstance = require('./upload');
+const settingsInstance = require('./settings');
 const {
   textMessage,
   quickReply,
@@ -19,24 +14,42 @@ const {
   imageReply
 } = require('./message_types');
 
-const { setPersistentMenuViaProfile } = require('./persistent_menu');
+const persistentMenuInstance = require('./persistent_menu');
 
-module.exports = {
-  processMessagesFromApiAi,
-  reply,
-  typing,
-  attachmentUpload,
-  greetingText,
-  getStartedButton,
-  persistentMenu,
-  setPersistentMenuViaProfile,
-  deletePersistentMenu,
-  textMessage,
-  quickReply,
-  genericMessage,
-  structuredMessage,
-  imageCard,
-  imageAttachment,
-  youtubeVideoCard,
-  imageReply
+module.exports = (botstackInstance) => {
+  const self = botstackInstance;
+  const {
+    processMessagesFromApiAi,
+    processMessagesFromDialogflow
+  } = dialogflowInstance(self);
+  const { reply } = replyInstance(self);
+  const { typing } = typingInstance(self);
+  const { attachmentUpload } = attachmentUploadInstance(self);
+  const {
+    greetingText,
+    getStartedButton,
+    persistentMenu,
+    deletePersistentMenu
+  } = settingsInstance(self);
+  const { setPersistentMenuViaProfile } = persistentMenuInstance(self);
+  return {
+    processMessagesFromApiAi,
+    processMessagesFromDialogflow,
+    reply,
+    typing,
+    attachmentUpload,
+    greetingText,
+    getStartedButton,
+    persistentMenu,
+    setPersistentMenuViaProfile,
+    deletePersistentMenu,
+    textMessage,
+    quickReply,
+    genericMessage,
+    structuredMessage,
+    imageCard,
+    imageAttachment,
+    youtubeVideoCard,
+    imageReply
+  };
 };

@@ -1,7 +1,12 @@
 const rp = require('request-promise');
 const log = require('../log');
+const multiconf = require('../multiconf');
+const constants = require('../common/constants');
 
-async function attachmentUpload(attachmentURL, attachmentType = 'video') {
+let self = null;
+
+async function attachmentUpload(attachmentURL, attachmentType = 'video', { pageId = null } = {}) {
+  const env = multiconf(self);
   const msg = {
     message: {
       attachment: {
@@ -14,10 +19,12 @@ async function attachmentUpload(attachmentURL, attachmentType = 'video') {
     }
   };
 
+  const FB_PAGE_ACCESS_TOKEN = await env.getFacebookPageTokenByPageID(pageId);
+
   const reqData = {
-    url: 'https://graph.facebook.com/v2.9/me/message_attachments',
+    url: constants.getFacebookGraphURL('/me/message_attachments'),
     qs: {
-      access_token: process.env.FB_PAGE_ACCESS_TOKEN
+      access_token: FB_PAGE_ACCESS_TOKEN
     },
     resolveWithFullResponse: true,
     method: 'POST',
@@ -57,6 +64,10 @@ async function attachmentUpload(attachmentURL, attachmentType = 'video') {
   }
 }
 
-module.exports = {
-  attachmentUpload
+module.exports = (botstackInstance) => {
+  self = botstackInstance;
+
+  return {
+    attachmentUpload
+  };
 };
