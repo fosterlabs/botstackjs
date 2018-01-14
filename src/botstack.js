@@ -30,6 +30,8 @@ class BotStack {
   constructor(botName = 'default bot', { useSmoochWebhook = false } = {}) {
     this.botName = botName;
     this.server = restify.createServer();
+    this.server.use(restify.queryParser());
+    this.server.use(restify.bodyParser());
     this.restify = restify;
 
     // utils
@@ -448,8 +450,6 @@ class BotStack {
     await environments.checkEnvironmentVariables(this);
     await environments.processEnvironmentVariables(this);
 
-    this.server.use(restify.queryParser());
-    this.server.use(restify.bodyParser());
     this.events = BotStackEmitterInit;
     this.state = state;
 
