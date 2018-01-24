@@ -201,11 +201,20 @@ class BotStack {
           // The sender object is not included for messaging_optins events triggered by the checkbox plugin.
           // https://developers.facebook.com/docs/messenger-platform/reference/webhook-events/messaging_optins
           let isMessagingOptins = false;
+          let isMessageRequest = false;
           let recipientUserRef = null;
+          // The sender object is not included for messaging_optins events triggered by the checkbox plugin.
           const senderId = _.get(message, 'sender.id');
           if ((!senderId) && (_.has(message, 'optin.user_ref'))) {
+            // it's checkbox plugin
             isMessagingOptins = true;
             recipientUserRef = _.get(message, 'optin.user_ref');
+          } else if ((senderId) && (
+            _.has(message, 'message_request') || _.has(message, 'optin.message_request')
+          )) {
+            //
+            isMessagingOptins = true;
+            isMessageRequest = true;
           }
           const isEcho = !!_.get(message, 'message.is_echo');
           if (isEcho) {
@@ -239,16 +248,18 @@ class BotStack {
             await self.geoLocationMessage(message, senderId, pageId);
           } else if (isTextMessage) {
             if (message.message.text === 'Get Started') {
-              await self.welcomeMessage(message.message.text, senderId, pageId);
+              await self.welcomeMessage(message.message.text, senderId, pageId, message);
             } else {
               await self.textMessage(message, senderId, pageId);
             }
           } else if (isPostbackMessage) {
             if (message.postback.payload === 'Get Started') {
-              await self.welcomeMessage(message.postback.payload, senderId, pageId);
+              await self.welcomeMessage(message.postback.payload, senderId, pageId, message);
             } else {
               await self.postbackMessage(message, senderId, pageId);
             }
+          } else if (isMessagingOptins && isMessageRequest) {
+            await self.messageRequest(message, senderId, pageId);
           } else if (isMessagingOptins) {
             await self.messagingOptins(message, recipientUserRef);
           } else {
@@ -260,7 +271,15 @@ class BotStack {
   }
   /* eslint-enable class-methods-use-this, func-names */
 
-  async welcomeMessage(messageText, senderId, pageId) {
+  async messageRequest(message, senderId, pageId) {
+    this.log.debug('Process message request', {
+      module: 'botstack:messageRequest',
+      senderId,
+      pageId
+    });
+  }
+
+  async welcomeMessage(messageText, senderId, pageId, message = null) {
     // botmetrics.logUserRequest(messageText, senderID);
     this.log.debug('Process welcome message', {
       module: 'botstack:welcomeMessage',
