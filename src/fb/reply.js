@@ -26,13 +26,17 @@ async function reply(message, senderId, {
       user_ref: senderId
     };
   } else if (_.get(params, 'is_customer_matching') === true) {
+    const firstName = _.get(params, 'customer_matching.first_name');
+    const lastName = _.get(params, 'customer_matching.last_name');
     sendData.recipient = {
-      phone_number: _.get(params, 'customer_matching.phone_number'),
-      name: {
-        first_name: _.get(params, 'customer_matching.first_name'),
-        last_name: _.get(params, 'customer_matching.last_name')
-      }
+      phone_number: _.get(params, 'customer_matching.phone_number')
     };
+    if ((!_.isEmpty(firstName)) && (!_.isEmpty(lastName))) {
+      sendData.recipient.name = {
+        first_name: firstName,
+        last_name: lastName
+      };
+    }
   } else {
     logData.senderId = senderId;
     sendData.recipient = {
