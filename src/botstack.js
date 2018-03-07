@@ -196,7 +196,21 @@ class BotStack {
         if (_.get(req.body, 'object') === 'page') {
           pageId = _.get(entry, 'id', null);
         }
+
+        // if 'conversations' webhook
+        if (_.has(entry, 'changes')) {
+          for(const convEvent of _.get(entry, 'changes')) {
+            if (_.get(convEvent, 'field') == 'conversations') {
+              const pageIdConv = _.get(convEvent, 'value.page_id');
+              const threadId = _.get(convEvent, 'value.thread_id');
+              await self.conversationMessage(pageIdConv, threadId);
+            }
+          }
+        }
+        //
+
         const messages = _.get(entry, 'messaging', []);
+
         for (const message of messages) {
           // The sender object is not included for messaging_optins events triggered by the checkbox plugin.
           // https://developers.facebook.com/docs/messenger-platform/reference/webhook-events/messaging_optins
@@ -266,6 +280,7 @@ class BotStack {
             await self.fallback(message, senderId, pageId);
           }
         }
+        //
       }
     };
   }
@@ -277,6 +292,15 @@ class BotStack {
       senderId,
       pageId
     });
+  }
+
+  async conversationMessage(pageId, threadId) {
+    this.log.debug('Process conversation message', {
+      module: 'botstack:conversationMessage',
+      pageId,
+      threadId
+    });
+
   }
 
   async welcomeMessage(messageText, senderId, pageId, message = null) {
