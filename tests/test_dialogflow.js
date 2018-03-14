@@ -36,7 +36,7 @@ const demoResponse = {
 let botstackFakeInstance = {};
 _.set(botstackFakeInstance, 'log.debug', () => {});
 
-describe('Testing API.AI', () => {
+describe('Testing Dialogflow', () => {
   let revert = null;
 
   beforeEach(() => {

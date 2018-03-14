@@ -133,14 +133,16 @@ function customMessageReply(message) {
     if ('facebook' in message.payload) {
       if ('attachment' in message.payload.facebook) {
         switch (message.payload.facebook.attachment.type) {
-          case 'video':
-            return videoReply(message.payload.facebook.attachment.payload);
-          case 'audio':
-            return audioReply(message.payload.facebook.attachment.payload);
-          case 'file':
-            return fileReply(message.payload.facebook.attachment.payload);
-          case 'image':
-            return imageReply(message.payload.facebook.attachment.payload);
+        case 'video':
+          return videoReply(message.payload.facebook.attachment.payload);
+        case 'audio':
+          return audioReply(message.payload.facebook.attachment.payload);
+        case 'file':
+          return fileReply(message.payload.facebook.attachment.payload);
+        case 'image':
+          return imageReply(message.payload.facebook.attachment.payload);
+        case 'template':
+          return message.payload.facebook;
         }
       }
     }

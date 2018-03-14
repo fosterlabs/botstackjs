@@ -294,6 +294,43 @@ describe('Testing FB', () => {
     assert.equal(_.get(data, '[0].attachment.payload.url'), 'http://example.com/image.jpg');
   });
 
+  it('Testing custom payload message (type = 4) generic template', async () => {
+    const dialogFlowTextResponse = require('../fixtures/apiai/custom_payload_generic_response.json');
+    const data = [];
+
+    const dialogflowInstance = require('../src/dialogflow');
+    const dialogflow = dialogflowInstance(botstackFakeInstance);
+    const dialogflowResult = dialogflow.processResponse(dialogFlowTextResponse, '1234567890');
+
+    rewiremock('./reply').with((botstackInstance) => {
+      return {
+        reply: async (message, senderId, {
+          messagingType = 'RESPONSE',
+          params = null,
+          pageId = null } = {}) => {
+            data.push(message);
+            return true;
+          }
+      };
+    });
+
+    rewiremock.enable();
+
+    const fbInstance = require(rewiremock.resolve('../src/fb'));
+    const fb = fbInstance(botstackFakeInstance);
+
+    const senderID = '1234567890';
+    const pageID = '0';
+    const res = await fb.processMessagesFromApiAi(dialogflowResult, senderID, pageID);
+
+    rewiremock.disable();
+    rewiremock.clear();
+
+    assert.isOk(_.find(data, 'attachment'));
+    assert.equal(_.get(data, '[0].attachment.type'), 'template');
+    assert.equal(_.get(data, '[0].attachment.payload.elements[0].title'), 'Welcome!');
+  });
+
   it('Testing with empty response', async () => {
     const apiAiTextResponse = require('../fixtures/apiai/test_response_empty.json');
     const data = [];

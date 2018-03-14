@@ -1,0 +1,71 @@
+{
+  "id": "6ece8ec8-be5b-4ea3-8a59-4712e1c28630",
+  "timestamp": "2018-03-14T08:53:38.839Z",
+  "lang": "en",
+  "result": {
+    "source": "agent",
+    "resolvedQuery": "Listing",
+    "action": "",
+    "actionIncomplete": false,
+    "parameters": {},
+    "contexts": [],
+    "metadata": {
+      "intentId": "1b50ef89-91ab-40e6-8577-de4c7173d174",
+      "webhookUsed": "false",
+      "webhookForSlotFillingUsed": "false",
+      "intentName": "Spoof Listing"
+    },
+    "fulfillment": {
+      "speech": "",
+      "messages": [
+        {
+          "type": 4,
+          "platform": "facebook",
+          "payload": {
+            "facebook": {
+              "attachment": {
+                "type": "template",
+                "payload": {
+                  "template_type": "generic",
+                  "elements": [
+                    {
+                      "title": "Welcome!",
+                      "image_url": "https://petersfancybrownhats.com/company_image.png",
+                      "subtitle": "We have the right hat for everyone.",
+                      "default_action": {
+                        "type": "web_url",
+                        "url": "https://petersfancybrownhats.com/view?item=103",
+                        "messenger_extensions": false,
+                        "webview_height_ratio": "tall",
+                        "fallback_url": "https://petersfancybrownhats.com/"
+                      },
+                      "buttons": [
+                        {
+                          "type": "web_url",
+                          "url": "https://petersfancybrownhats.com",
+                          "title": "View Website"
+                        },
+                        {
+                          "type": "postback",
+                          "title": "Start Chatting",
+                          "payload": "DEVELOPER_DEFINED_PAYLOAD"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "score": 1
+  },
+  "status": {
+    "code": 200,
+    "errorType": "success",
+    "webhookTimedOut": false
+  },
+  "sessionId": "f1d0ae2d-19e2-4cbd-96dd-dbb8734c8c34"
+}
