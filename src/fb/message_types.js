@@ -144,10 +144,14 @@ function customMessageReply(message) {
         case 'template':
           return message.payload.facebook;
         }
+      } else if ('message' in message.payload.facebook) {
+        if ('text' in message.payload.facebook.message) {
+          return textMessage(message.payload.facebook.message.text);
+        }
       }
     }
   }
-}
+};
 
 function imageCard(thumbUrl, downloadUrl, instaUrl, authName) {
   return {
