@@ -20,6 +20,7 @@
     "chai-as-promised": "^7.1.1",
     "dashbot": "^0.7.4",
     "dotenv": "^4.0.0",
+    "extlog-node": "git://github.com/webus/extlog-node.git#master",
     "lodash": "^4.17.4",
     "mongoose": "^4.8.1",
     "nock": "^9.1.5",
