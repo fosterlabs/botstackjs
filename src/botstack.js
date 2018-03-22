@@ -9,15 +9,6 @@ const smooch = require('./smooch');
 const environments = require('./environments');
 const settings = require('./settings');
 
-
-process.on('unhandledRejection', (reason, p) => {
-  log.error('Unhandled Rejection at: Promise', p, 'reason:', reason);
-});
-process.on('uncaughtException', (err) => {
-  log.error(`Caught exception: ${err}`);
-});
-
-
 const sessionStore = require('./session')();
 const state = require('./state')();
 const s3 = require('./s3');
@@ -192,6 +183,10 @@ class BotStack {
       await self._syncFbMessageToBackChat(req); // eslint-disable-line no-underscore-dangle
       const entries = _.get(req, 'body.entry', []);
       for (const entry of entries) {
+        self.log.debug('New message', {
+          entry: entry,
+          module: 'botstack:webhook'
+        });
         let pageId = null;
         if (_.get(req.body, 'object') === 'page') {
           pageId = _.get(entry, 'id', null);
