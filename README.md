@@ -1,6 +1,6 @@
 ## BotStackjs
 
-[![Build Status](https://travis-ci.org/cama/botstackjs.svg?branch=master)](https://travis-ci.org/cama/botstackjs)
+[![Build Status](https://travis-ci.org/fosterlabs/botstackjs.svg?branch=master)](https://travis-ci.org/fosterlabs/botstackjs)
 [![npm version](https://badge.fury.io/js/botstack.svg)](https://badge.fury.io/js/botstack)
 [![npm](https://img.shields.io/npm/dm/botstack.svg)]()
 
