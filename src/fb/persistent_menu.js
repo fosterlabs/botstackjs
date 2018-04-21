@@ -8,8 +8,8 @@ module.exports = (botstackInstance) => {
   const self = botstackInstance;
   const env = multiconf(self);
 
-  async function setMessengerProfileData(data) {
-    const FB_PAGE_ACCESS_TOKEN = await env.getEnvDefault('FB_PAGE_ACCESS_TOKEN');
+  async function setMessengerProfileData(data, pageId = null) {
+    const FB_PAGE_ACCESS_TOKEN = await env.getFacebookPageTokenByPageID(pageId);
     const reqData = {
       url: constants.getFacebookGraphURL('/me/messenger_profile'),
       qs: {
@@ -40,14 +40,14 @@ module.exports = (botstackInstance) => {
     }
   }
 
-  async function setPersistentMenuViaProfile(initData = []) {
+  async function setPersistentMenuViaProfile(initData = [], pageId = null) {
     log.debug('Sending persistent menu', {
       module: 'botstack:fb'
     });
     const data = {
       persistent_menu: _.cloneDeep(initData)
     };
-    return setMessengerProfileData(data);
+    return setMessengerProfileData(data, pageId);
   }
 
   return {

@@ -37,7 +37,7 @@ async function setThreadSettings(data, method = 'POST', { pageId = null } = {}) 
   }
 }
 
-async function greetingText(text) {
+async function greetingText(text, pageId = null) {
   log.debug('Sending greeting text', {
     module: 'botstack:fb'
   });
@@ -47,11 +47,16 @@ async function greetingText(text) {
       text
     }
   };
-  const result = await setThreadSettings(data);
+  let result = null;
+  if (pageId) {
+    result = await setThreadSettings(data, 'POST', { pageId: pageId });
+  } else {
+    result = await setThreadSettings(data);
+  }
   return result;
 }
 
-async function getStartedButton(payload) {
+async function getStartedButton(payload, pageId = null) {
   payload = typeof (payload) !== 'undefined' ? payload : 'Get Started';
   log.debug('Sending started button', {
     module: 'botstack:fb'
@@ -63,7 +68,12 @@ async function getStartedButton(payload) {
       { payload }
     ]
   };
-  const result = await setThreadSettings(data);
+  let result = null;
+  if (pageId) {
+    result = await setThreadSettings(data, 'POST', { pageId: pageId });
+  } else {
+    result = await setThreadSettings(data);
+  }
   return result;
 }
 
@@ -71,7 +81,7 @@ async function getStartedButton(payload) {
   [{ type: "postback", title: "Yes", payload: "Yes" },
   { type: "postback", title: "Help", payload: "Help" }]
 */
-async function persistentMenu(call_to_actions) {
+async function persistentMenu(call_to_actions, pageId = null) {
   log.debug('Sending persistent menu settings', {
     module: 'botstack:fb'
   });
@@ -80,7 +90,12 @@ async function persistentMenu(call_to_actions) {
     thread_state: 'existing_thread',
     call_to_actions
   };
-  const result = await setThreadSettings(data);
+  let result = null;
+  if (pageId) {
+    result = await setThreadSettings(data, 'POST', { pageId });
+  } else {
+    result = await setThreadSettings(data);
+  }
   return result;
 }
 

@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 
+
 function checkAndLoadConfig() {
   let basePath = null;
   if (_.has(require.main, 'filename')) {
@@ -37,31 +38,81 @@ async function parseConfig(self) {
     });
   }
 
+  let pageIds = [];
+  if ('getPageAccessTokensCollection' in self) {
+    pageIds = await self.getPageAccessTokensCollection();
+    self.log.debug('Using multitoken FB setup!');
+  } else {
+    self.log.debug('Using single token FB setup!');
+  }
+
   if (_.has(conf, 'getStartedButtonText')) {
-    const data = await self.fb.getStartedButton(conf.getStartedButtonText);
-    self.log.debug('Started button done', { module: 'botstack:constructor', result: data.result });
+    let data = null;
+    let result = null;
+    if (pageIds.length > 0) {
+      data = [];
+      for (const pageId of pageIds) {
+        data.push(await self.fb.getStartedButton(conf.getStartedButtonText, pageId));
+      }
+      result = _.map(data, (c) => _.get(c, 'result'));
+    } else {
+      data = await self.fb.getStartedButton(conf.getStartedButtonText);
+      result = _.get(data, 'result');
+    }
+    self.log.debug('Started button done', { module: 'botstack:constructor', result: result });
   } else {
     const data = await self.fb.getStartedButton();
     self.log.debug('Started button done', { module: 'botstack:constructor', result: data.result });
   }
 
   if (_.has(conf, 'persistentMenu')) {
+    let data = null;
+    let result = null;
     if ((_.isArray(conf.persistentMenu)) && (conf.persistentMenu.length > 0)) {
-      if (_.has(conf.persistentMenu[0], 'type')) {
+      if (_.every(conf.persistentMenu, 'type')) {
         // old style config
-        const data = await self.fb.persistentMenu(conf.persistentMenu);
-        self.log.debug('Persistent menu done', { module: 'botstack:constructor', result: data.result });
-      } else if (_.has(conf.persistentMenu[0], 'call_to_actions')) {
+        if (pageIds.length > 0) {
+          data = [];
+          for (const pageId of pageIds) {
+            data.push(await self.fb.persistentMenu(conf.persistentMenu, pageId));
+          }
+          result = _.map(data, (c) => _.get(c, 'result'));
+        } else {
+          data = await self.fb.persistentMenu(conf.persistentMenu);
+          result = _.get(data, 'result');
+        }
+        self.log.debug('Persistent menu done', { module: 'botstack:constructor', result: result });
+      } else if (_.some(conf.persistentMenu, 'call_to_actions')) {
         // new style config
-        const data = await self.fb.setPersistentMenuViaProfile(conf.persistentMenu);
-        self.log.debug('Persistent menu done', { module: 'botstack:constructor', result: data.result });
+        if (pageIds.length > 0) {
+          data = [];
+          for (const pageId of pageIds) {
+            data.push(await self.fb.setPersistentMenuViaProfile(conf.persistentMenu, pageId));
+          }
+          result = _.map(data, (c) => _.get(c, 'result'));
+        } else {
+          data = await self.fb.setPersistentMenuViaProfile(conf.persistentMenu);
+          result = _.get(data, 'result');
+        }
+        self.log.debug('Persistent menu done', { module: 'botstack:constructor', result: result });
       }
     }
   }
 
   if (_.has(conf, 'welcomeText')) {
-    const data = await self.fb.greetingText(conf.welcomeText);
-    self.log.debug('Welcome text done', { module: 'botstack:constructor', result: data.result });
+    let data = null;
+    let result = null;
+    if (pageIds.length > 0) {
+      data = [];
+      for (const pageId of pageIds) {
+        data.push(await self.fb.greetingText(conf.welcomeText));
+      }
+      result = _.map(data, (c) => _.get(c, 'result'));
+    } else {
+      data = await self.fb.greetingText(conf.welcomeText);
+      result = _.get(data, 'result');
+    }
+    self.log.debug('Welcome text done', { module: 'botstack:constructor', result: result });
   }
 }
 
