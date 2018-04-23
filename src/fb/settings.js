@@ -37,21 +37,55 @@ async function setThreadSettings(data, method = 'POST', { pageId = null } = {}) 
   }
 }
 
+async function setMessengerProfileProperties(data, pageId = null) {
+  const env = multiconf(self);
+  const FB_PAGE_ACCESS_TOKEN = await env.getFacebookPageTokenByPageID(pageId);
+  const reqData = {
+    url: constants.getFacebookGraphURL('/me/messenger_profile'),
+    qs: {
+      access_token: FB_PAGE_ACCESS_TOKEN
+    },
+    resolveWithFullResponse: true,
+    method: 'POST',
+    json: data
+  };
+  try {
+    const response = await rp(reqData);
+    if (response.statusCode == 200) {
+      log.debug('Sent settings to Facebook', {
+        module: 'botstack:fb'
+      });
+      return response.body;
+    }
+    log.error('Error in Facebook response', {
+      module: 'botstack:fb', response: response.body
+    });
+    throw new Error(`Error in Facebook response: ${response.body}`);
+  } catch (e) {
+    log.error(e, {
+      module: 'botstack:fb'
+    });
+    throw e;
+  }
+}
+
 async function greetingText(text, pageId = null) {
   log.debug('Sending greeting text', {
     module: 'botstack:fb'
   });
   const data = {
-    setting_type: 'greeting',
-    greeting: {
-      text
-    }
+    greeting: [
+      {
+        locale: 'default',
+        text: text
+      }
+    ]
   };
   let result = null;
   if (pageId) {
-    result = await setThreadSettings(data, 'POST', { pageId: pageId });
+    result = await setMessengerProfileProperties(data, pageId);
   } else {
-    result = await setThreadSettings(data);
+    result = await setMessengerProfileProperties(data);
   }
   return result;
 }
@@ -62,15 +96,13 @@ async function getStartedButton(payload, pageId = null) {
     module: 'botstack:fb'
   });
   const data = {
-    setting_type: 'call_to_actions',
-    thread_state: 'new_thread',
-    call_to_actions: [
-      { payload }
-    ]
+    get_started: {
+      payload: payload
+    }
   };
   let result = null;
   if (pageId) {
-    result = await setThreadSettings(data, 'POST', { pageId: pageId });
+    result = await setMessengerProfileProperties(data, pageId);
   } else {
     result = await setThreadSettings(data);
   }
