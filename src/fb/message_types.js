@@ -148,12 +148,11 @@ function customMessageReply(message) {
           return message.payload.facebook;
         }
       } else if ('message' in message.payload.facebook) {
-        return message.payload.facebook;
-        /*
-        if ('text' in message.payload.facebook.message) {
+        if ('quick_replies'in message.payload.facebook.message) {
+          return message.payload.facebook.message;
+        } else if ('text' in message.payload.facebook.message) {
           return textMessage(message.payload.facebook.message.text);
         }
-        */
       }
     }
   }
