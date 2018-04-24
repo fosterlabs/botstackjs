@@ -128,6 +128,9 @@ function fileReply(message) {
   };
 }
 
+/**
+
+ */
 function customMessageReply(message) {
   if ('payload' in message) {
     if ('facebook' in message.payload) {
@@ -145,9 +148,12 @@ function customMessageReply(message) {
           return message.payload.facebook;
         }
       } else if ('message' in message.payload.facebook) {
+        return message.payload.facebook;
+        /*
         if ('text' in message.payload.facebook.message) {
           return textMessage(message.payload.facebook.message.text);
         }
+        */
       }
     }
   }

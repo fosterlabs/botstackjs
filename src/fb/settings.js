@@ -51,10 +51,12 @@ async function setMessengerProfileProperties(data, pageId = null) {
   };
   try {
     const response = await rp(reqData);
+    // console.log(response.request.uri.href);
     if (response.statusCode == 200) {
       log.debug('Sent settings to Facebook', {
         module: 'botstack:fb'
       });
+      // console.log(JSON.stringify(response.body, null, 2));
       return response.body;
     }
     log.error('Error in Facebook response', {
