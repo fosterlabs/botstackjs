@@ -13,6 +13,7 @@ const sessionStore = require('./session')();
 const state = require('./state')();
 const s3 = require('./s3');
 const env = require('./multiconf');
+const constants = require('./common/constants');
 
 const { BotStackEmitterInit, BotStackCheck, BotStackEvents } = require('./events');
 
@@ -32,6 +33,7 @@ class BotStack {
     this.s3 = s3;
     this.log = log;
     this.env = env(this);
+    this.constants = constants;
   }
 
   /* eslint-disable class-methods-use-this, no-unused-vars */

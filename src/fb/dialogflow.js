@@ -16,6 +16,63 @@ module.exports = (botstackInstance) => {
 
   const { reply } = replyInstance(self);
 
+  function getLodashTemplateVariables(template) {
+    const pattern = [
+      '<%[=|-]?', // look for opening tag (<%, <%=, or <%-)
+      '(?:[\\s]|if|\\()*', // accept any space after opening tag and before identifier
+      '(.+?)', // capture the identifier name (`hello` in <%= hello %>)
+      '(?:[\\s]|\\)|\\{)*', // accept any space after identifier and before closing tag
+      '%>' // look for closing tag
+    ].join('');
+
+    const regex = new RegExp(pattern, 'g');
+    const matches = [];
+    let match = null;
+    while (match=regex.exec(template)) {
+      matches.push(match[1]);
+    }
+    return _.uniq(matches);
+  }
+
+  async function processTemplateString(templateString, senderId, pageId) {
+    if (!'getBotstackTemplateStringVars' in self) {
+      return {
+        ok: false,
+        result: templateString
+      };
+    }
+    const varNames = getLodashTemplateVariables(templateString);
+    if (varNames.length == 0) {
+      return {
+        ok: true,
+        result: templateString
+      };
+    }
+    let varValues = {};
+    try {
+      varValues = await self.getBotstackTemplateStringVars(varNames, senderId, pageId);
+    } catch (err) {
+      log.error(err);
+      return {
+        ok: false,
+        result: templateString
+      };
+    };
+    let template = _.template(templateString);
+    try {
+      return {
+        ok: true,
+        result: template(varValues)
+      };
+    } catch (err) {
+      log.error(err);
+      return {
+        ok: false,
+        result: templateString
+      };
+    }
+  }
+
   async function processMessagesFromDialogflow(dialogFlowResponse, senderId, pageId, dontSend = false) {
     const useOnlyFacebookResponse = await env.getEnv('BOTSTACK_ONLY_FB_RESP');
     const allMessages = [];
@@ -65,6 +122,16 @@ module.exports = (botstackInstance) => {
           log.error('Unknown message type', { module: 'botstack:fb ' });
           break;
       }
+      // parse templates
+      if (_.isObject(replyMessage)) {
+        const strReplyMessage = JSON.stringify(replyMessage);
+        const res = await processTemplateString(strReplyMessage, senderId, pageId);
+        replyMessage = JSON.parse(_.get(res, 'result'));
+      } else {
+        const res = await processTemplateString(replyMessage, senderId, pageId);
+        replyMessage = _.get(res, 'result');
+      }
+      //
       if (dontSend) {
         allMessages.push(replyMessage);
       } else if (pageId) {
