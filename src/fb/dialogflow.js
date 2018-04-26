@@ -35,7 +35,9 @@ module.exports = (botstackInstance) => {
   }
 
   async function processTemplateString(templateString, senderId, pageId) {
+    log.debug('on processTemplateString', { module: 'botstack:fb:dialogflow' });
     if (!'getBotstackTemplateStringVars' in self) {
+      log.debug('getBotstackTemplateStringVars not found!', { module: 'botstack:fb:dialogflow' });
       return {
         ok: false,
         result: templateString
@@ -43,6 +45,7 @@ module.exports = (botstackInstance) => {
     }
     const varNames = getLodashTemplateVariables(templateString);
     if (varNames.length == 0) {
+      log.debug('no variables found in template!', { module: 'botstack:fb:dialogflow' });
       return {
         ok: true,
         result: templateString
