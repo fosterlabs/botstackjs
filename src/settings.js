@@ -3,7 +3,6 @@ const fs = require('fs');
 const path = require('path');
 
 
-
 function checkAndLoadConfig() {
   let basePath = null;
   if (_.has(require.main, 'filename')) {
@@ -46,7 +45,9 @@ async function parseConfig(self) {
     self.log.debug('Using single token FB setup!');
   }
 
-  if (_.has(conf, 'getStartedButtonText')) {
+  const fbSettingsDisabled = 'FB_SETTINGS_DISABLED' in process.env;
+
+  if (_.has(conf, 'getStartedButtonText') && !fbSettingsDisabled) {
     let data = null;
     let result = null;
     if (pageIds.length > 0) {
@@ -60,12 +61,12 @@ async function parseConfig(self) {
       result = _.get(data, 'result');
     }
     self.log.debug('Started button done', { module: 'botstack:constructor', result: result });
-  } else {
+  } else if (!fbSettingsDisabled) {
     const data = await self.fb.getStartedButton();
     self.log.debug('Started button done', { module: 'botstack:constructor', result: data.result });
   }
 
-  if (_.has(conf, 'persistentMenu')) {
+  if (_.has(conf, 'persistentMenu') && (!fbSettingsDisabled)) {
     let data = null;
     let result = null;
     if ((_.isArray(conf.persistentMenu)) && (conf.persistentMenu.length > 0)) {
@@ -99,13 +100,13 @@ async function parseConfig(self) {
     }
   }
 
-  if (_.has(conf, 'welcomeText')) {
+  if (_.has(conf, 'welcomeText') && (!fbSettingsDisabled)) {
     let data = null;
     let result = null;
     if (pageIds.length > 0) {
       data = [];
       for (const pageId of pageIds) {
-        data.push(await self.fb.greetingText(conf.welcomeText));
+        data.push(await self.fb.greetingText(conf.welcomeText, pageId));
       }
       result = _.map(data, (c) => _.get(c, 'result'));
     } else {
