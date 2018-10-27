@@ -59,6 +59,7 @@ Other examples you can find in the `examples` folder of this repository.
 * Configurable 'Greeting, Get Started Button & Action Menu'
 * Simple User Onboarding Design
 * Facebook Referral Support- Track different links placed in different channels to see which is most effective
+* Messenger Handover Prototcol-  enables two or more Facebook apps to participate in a conversation by passing control of the conversation between them
 * NLP - Inuitive and easy use Natural Langage Programming
 * Easily setup FB structured messages (Image, Quick Replys, Card, Custom Payload)
 * Analytics and Insights
